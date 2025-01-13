@@ -1,0 +1,62 @@
+# ===============================
+# Client (React) - Ignored Files
+# ===============================
+/client/node_modules
+/client/dist
+/client/dist-ssr
+/client/.env
+
+# Logs
+/client/logs
+/client/*.log
+/client/npm-debug.log*
+/client/yarn-debug.log*
+/client/yarn-error.log*
+/client/pnpm-debug.log*
+/client/lerna-debug.log*
+
+# Editor directories and files
+/client/.vscode/*
+!/client/.vscode/extensions.json
+/client/.idea
+/client/.DS_Store
+/client/*.suo
+/client/*.ntvs*
+/client/*.njsproj
+/client/*.sln
+/client/*.sw?
+
+# ===============================
+# Server (Laravel) - Ignored Files
+# ===============================
+/server/vendor
+/server/node_modules
+/server/.env
+/server/.env.backup
+/server/.env.production
+/server/storage/*.key
+/server/public/build
+/server/public/hot
+/server/public/storage
+/server/.phpunit.cache
+/server/.phpunit.result.cache
+/server/Homestead.json
+/server/Homestead.yaml
+/server/auth.json
+/server/.fleet
+
+# Logs
+/server/npm-debug.log
+/server/yarn-error.log
+
+# Editor directories and files
+/server/.idea
+/server/.vscode
+/server/.DS_Store
+
+# ===============================
+# OS/System Files - Ignored Globally
+# ===============================
+Thumbs.db
+ehthumbs.db
+Desktop.ini
