@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('videos', function (Blueprint $table) {
             $table->id();
-            $table->string('file_name', 255);
+            $table->string('filename', 255);
             $table->integer('added_by');
             $table->timestamps();
         });

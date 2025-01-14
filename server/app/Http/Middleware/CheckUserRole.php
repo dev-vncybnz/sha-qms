@@ -6,20 +6,17 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class CheckApiAccess
+class CheckUserRole
 {
     /**
      * Handle an incoming request.
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next, $role): Response
     {
-        $apiKey = $request->header('X-API-KEY');
-        $validApiKey = config('sha.api_key');
-
-        if($apiKey != $validApiKey) {
-            return response()->json('Unauthorized!', 401);
+        if ($request->user()->role != $role) {
+            return response()->json('Forbidden!', 403);
         }
 
         return $next($request);

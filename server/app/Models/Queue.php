@@ -10,8 +10,9 @@ class Queue extends Model
     use HasFactory;
 
     protected $fillable = [
+        'student_id',
+        'ticket_code',
         'status',
-        'code',
         'assigned_person',
     ];
 

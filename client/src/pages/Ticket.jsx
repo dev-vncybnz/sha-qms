@@ -9,6 +9,17 @@ const Ticket = (props, ref) => {
             <div>
                 <p>Please proceed to {destination} when your number is called</p>
                 <p className="text-4xl">{code}</p>
+
+                <div className="mt-3 flex flex-col gap-2">
+                    <div className="flex gap-3 items-end">
+                        <p><strong>Name:</strong></p>
+                        <div className="grow bg-black h-px"></div>
+                    </div>
+                    <div className="flex gap-3 items-end">
+                        <p><strong>Grade and Section:</strong></p>
+                        <div className="grow bg-black h-px"></div>
+                    </div>
+                </div>
             </div>
             <p>Thank you for using our system !!!</p>
         </div>

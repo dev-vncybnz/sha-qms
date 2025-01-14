@@ -33,22 +33,30 @@ const GenerateTicket = () => {
 
     const onClickButton = async (person) => {
         const result = await Swal.fire({
-            text: 'Please select "Yes" to confirm',
+            text: 'Please confirm by typing your ID number',
+            input: 'text',
             cancelButtonText: "Cancel",
             showCancelButton: true,
             confirmButtonText: "Yes",
             reverseButtons: true,
             customClass: {
                 confirmButton: "w-32",
-                cancelButton: "w-32"
+                cancelButton: "w-32",
+                input: "text-center"
+            },
+            inputValidator: (value) => {
+                if (!value.trim() || value.length > 6) {
+                    return "Please enter valid ID number";
+                }
             }
         });
 
-        const { isConfirmed } = result;
+        const { isConfirmed, value } = result;
 
         if (isConfirmed) {
+            const baseUrl = import.meta.env.VITE_API_URL;
             const apiKey = import.meta.env.VITE_API_KEY;
-            const url = `${import.meta.env.VITE_API_URL}/api/queues`;
+            const url = `${baseUrl}/generate-ticket`;
             const requestOptions = {
                 method: "POST",
                 headers: {
@@ -57,26 +65,27 @@ const GenerateTicket = () => {
                     "X-API-KEY": apiKey,
                 },
                 body: JSON.stringify({
-                    person
+                    person,
+                    student_id: value
                 })
             };
 
             const response = await fetch(url, requestOptions);
             const responseJSON = await response.json();
-            const { code } = responseJSON;
-            const destination = person == 0 ? 'Cashier' : 'Registrar';
-            setTicket({ code, destination });
+            const { ticket_code } = responseJSON;
+            const destination = person == 'cashier' ? 'Cashier' : 'Registrar';
+            setTicket({ code: ticket_code, destination });
         }
     }
 
     return (
         <div id="generate-ticket">
             <div className="container h-screen flex flex-col justify-center p-10">
-                <h1 className="text-5xl text-center mb-12 text-center uppercase">Generate Ticket Number</h1>
+                <h1 className="text-5xl text-center mb-12 text-center uppercase">Generate Ticket</h1>
 
                 <div className="flex flex-col gap-8">
-                    <button type="button" onClick={() => onClickButton(0)} className="text-2xl bg-blue-500 px-16 py-8 text-white rounded-full text-lg text-center uppercase hover:bg-blue-400">Cashier</button>
-                    <button type="button" onClick={() => onClickButton(1)} className="text-2xl bg-red-500 px-16 py-8 text-white rounded-full text-lg text-center uppercase hover:bg-red-400">Registrar</button>
+                    <button type="button" onClick={() => onClickButton('cashier')} className="text-2xl bg-blue-500 px-16 py-8 text-white rounded-full text-lg text-center uppercase hover:bg-blue-400">Cashier</button>
+                    <button type="button" onClick={() => onClickButton('registrar')} className="text-2xl bg-red-500 px-16 py-8 text-white rounded-full text-lg text-center uppercase hover:bg-red-400">Registrar</button>
                 </div>
             </div>
 

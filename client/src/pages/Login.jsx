@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import Swal from 'sweetalert2'
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [data, setData] = useState({});
     const authContext = useAuth();
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (error != null) {
@@ -23,11 +25,17 @@ const Login = () => {
         }
     }, [error]);
 
+    const handleChange = e => {
+        const { name, value } = e.target;
+        setData(prev => ({ ...prev, [name]: value }));
+    }
+
     const handleSubmit = async e => {
         e.preventDefault();
 
+        const baseUrl = import.meta.env.VITE_API_URL;
         const apiKey = import.meta.env.VITE_API_KEY;
-        const url = `${import.meta.env.VITE_API_URL}/api/login`;
+        const url = `${baseUrl}/login`;
         const requestOptions = {
             method: "POST",
             headers: {
@@ -55,6 +63,10 @@ const Login = () => {
             const responseJSON = await response.json();
             const { token, user } = responseJSON;
 
+            if (user.role === 'admin') {
+                return;
+            }
+
             localStorage.setItem("token", token);
             localStorage.setItem("user", JSON.stringify(user));
 
@@ -62,7 +74,11 @@ const Login = () => {
             authContext.setToken(token);
             authContext.setUser(user);
 
-            // console.log(authContext.isAuthenticated, authContext.token, authContext.user);
+            if (user.role === 'cashier') {
+                navigate('/cashier');
+            } else if (user.role === 'registrar') {
+                navigate('/registrar');
+            }
         } catch (error) {
             setError("Invalid Credentials");
             console.log(error);
@@ -71,16 +87,11 @@ const Login = () => {
         }
     }
 
-    const handleChange = e => {
-        const { name, value } = e.target;
-        setData(prev => ({ ...prev, [name]: value }));
-    }
-
     return (
         <div id="admin-login">
             <div className="container h-screen flex justify-center items-center">
-                <div className="w-2/5 shadow-md p-10 rounded-xl">
-                    <h1 className="text-center text-3xl uppercase mb-10">Admin Login</h1>
+                <div className="w-1/3 shadow-md p-10 rounded-xl">
+                    <h1 className="text-center text-3xl uppercase mb-10">Login</h1>
 
                     <form onSubmit={handleSubmit}>
                         <div className="flex flex-col gap-5">

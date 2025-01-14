@@ -6,6 +6,7 @@ use App\Enums\GenderEnum;
 use App\Enums\RoleEnum;
 use BenSampo\Enum\Rules\EnumValue;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UserStoreRequest extends FormRequest
 {
@@ -25,35 +26,10 @@ class UserStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'photo' => [
-                'nullable',
-                'string',
-                'max:255'
-            ],
-            'first_name' => [
+            'name' => [
                 'required',
-                'string',
-                'max:255'
-            ],
-            'last_name' => [
-                'required',
-                'string',
-                'max:255'
-            ],
-            'gender' => [
-                'nullable',
-                'integer',
-                new EnumValue(GenderEnum::class)
-            ],
-            'address' => [
-                'nullable',
                 'string',
                 'max:255',
-            ],
-            'phone' => [
-                'nullable',
-                'string',
-                'max:11',
             ],
             'email' => [
                 'required',
@@ -69,8 +45,8 @@ class UserStoreRequest extends FormRequest
             ],
             'role' => [
                 'required',
-                'integer',
-                new EnumValue(RoleEnum::class)
+                'string',
+                Rule::in([RoleEnum::ADMIN, RoleEnum::CASHIER, RoleEnum::REGISTRAR])
             ]
         ];
     }

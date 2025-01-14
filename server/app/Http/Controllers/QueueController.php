@@ -89,44 +89,49 @@ class QueueController extends Controller
         $data = $request->validate([
             'person' => [
                 'required',
-                'integer',
+                'string',
                 Rule::in([RoleEnum::CASHIER, RoleEnum::REGISTRAR])
+            ],
+            'student_id' => [
+                'required',
+                'string',
+                'min:4',
+                'max:6'
             ]
         ]);
 
         $person = $data['person'];
+        $studentId = $data['student_id'];
 
-        // Get the latest queue data of specific person type where queue date is today
-        $latestQueueData = Queue::join('users', 'users.id', 'queues.assigned_person')
-            ->where('users.role', $person)
-            ->whereDate('queues.created_at', now())
-            ->orderBy('queues.created_at', 'desc')
+        // Get latest ticket by specific role
+        $personLike = $person == 'cashier' ? 'CAS' : 'REG';
+        $latestTicketData = Queue::where('ticket_code', 'like', "%$personLike%")
+            ->whereDate('created_at', now())
+            ->latest()
             ->first();
 
-        $latestQueueNumber = 1;
+        $latestTicketNumber = 1;
 
-        if ($latestQueueData) {
-            $toRemoveText = $person == 0 ? 'CAS-' : 'REG-';
-            $removedTextInCode = str_replace($toRemoveText, '', $latestQueueData->code);
-            $latestQueueNumber = intval($removedTextInCode);
-            $latestQueueNumber++;
+        if ($latestTicketData) {
+            $latestTicketNumber = $latestTicketData->ticket_code;
+            $latestTicketNumber = explode('-', $latestTicketNumber)[1];
+            $latestTicketNumber = intval($latestTicketNumber);
+            $latestTicketNumber++;
         }
-
+        
         // Create Ticket Code Prefix
         $code = "CAS-";
-        $assignedPerson = User::where('role', RoleEnum::CASHIER)->first();
 
-        if ($person == 1) {
+        if ($person == "registrar") {
             $code = "REG-";
-            $assignedPerson = User::where('role', RoleEnum::REGISTRAR)->first();
         }
 
         // Add 000 to the left of queue number that is less than 3 digits
-        $code = $code . str_pad(strval($latestQueueNumber), 4, '0', STR_PAD_LEFT);
+        $code = $code . str_pad(strval($latestTicketNumber), 4, '0', STR_PAD_LEFT);
 
         $data = [
-            'code' => $code,
-            'assigned_person' => $assignedPerson->id,
+            'student_id' => $studentId,
+            'ticket_code' => $code,
             'status' => QueueStatusEnum::PENDING,
         ];
 
@@ -141,10 +146,10 @@ class QueueController extends Controller
 
         try {
             $inProgressQueues = Queue::where('assigned_person', Auth::user()->id)
-            ->whereNot('id', $queue->id)
-            ->where('status', QueueStatusEnum::IN_PROGRESS)
-            ->whereDate('created_at', now())
-            ->get();
+                ->whereNot('id', $queue->id)
+                ->where('status', QueueStatusEnum::IN_PROGRESS)
+                ->whereDate('created_at', now())
+                ->get();
 
             foreach ($inProgressQueues as $item) {
                 $item->status = QueueStatusEnum::PENDING;

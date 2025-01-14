@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CashierQueueController;
 use App\Http\Controllers\QueueController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -16,7 +17,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('api-key')->group(function () {
+/* Route::middleware('api-key')->group(function () {
     Route::post('/login', [AuthController::class, 'index']);
     Route::get('/queues', [QueueController::class, 'index']);
     Route::post('/queues', [QueueController::class, 'store']);
@@ -28,4 +29,18 @@ Route::middleware(['api-key', 'auth:sanctum'])->group(function () {
     Route::post('/users', [UserController::class, 'store']);
     Route::get('/queues', [QueueController::class, 'index']);
     Route::put('/queues/{queue}', [QueueController::class, 'update']);
+}); */
+
+Route::middleware(['api-key'])->group(function () {
+    Route::post('/generate-ticket', [QueueController::class, 'store']);
+    Route::post('/login', [AuthController::class, 'index']);
+    Route::delete('/logout', [AuthController::class, 'destroy'])->middleware('auth:sanctum');
+    Route::post('/users', [UserController::class, 'store'])
+        ->middleware(['auth:sanctum', 'check-user-role:admin']);
+
+    Route::prefix('/cashier')->group(function () {
+        Route::get('/queues', [CashierQueueController::class, 'index']);
+        Route::post('/queues', [CashierQueueController::class, 'store']);
+        Route::put('/queues', [CashierQueueController::class, 'update']);
+    });
 });

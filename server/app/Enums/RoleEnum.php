@@ -6,7 +6,9 @@ use BenSampo\Enum\Enum;
 
 final class RoleEnum extends Enum
 {
-    const CASHIER = 0;
-    const REGISTRAR = 1;
-    const ADMIN = 2;
+    const ADMIN = 'admin';
+    const CASHIER = 'cashier';
+    const REGISTRAR = 'registrar';
+    const CASHIER_1 = 'cashier_1';
+    const CASHIER_2 = 'cashier_2';
 }

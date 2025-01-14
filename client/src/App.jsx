@@ -5,7 +5,9 @@ import Login from './pages/Login';
 import { AuthContextProvider } from './contexts/AuthContext';
 import SecureRoutes from './SecureRoutes';
 import NotFound from './pages/NotFound';
-import CashierQueue from './pages/cashier/queue';
+import CashierQueue from './pages/cashier/Queue';
+import CashierDashboard from './pages/cashier/Dashboard';
+import RegistrarDashboard from './pages/registrar/Dashboard';
 
 function App() {
   return (
@@ -13,14 +15,22 @@ function App() {
       <BrowserRouter>
         <AuthContextProvider>
           <Routes>
-            <Route path="/generate" element={<GenerateTicket />} />
-            <Route path="/queue" element={<QueueMonitor />} />
-            <Route path="cashier">
+            <Route path="/generate-ticket" element={<GenerateTicket />} />
+            <Route path="/queue-monitor" element={<QueueMonitor />} />
+            <Route path="/login" element={<Login />} />
+
+            <Route path="/cashier">
+              <Route path="" element={<CashierDashboard />} />
               <Route path="queue" element={<CashierQueue />} />
               <Route element={<SecureRoutes />}>
+
               </Route>
-              <Route path="login" element={<Login />} />
             </Route>
+            
+            <Route path="/registrar">
+              <Route path="" element={<RegistrarDashboard />} />
+            </Route>
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthContextProvider>

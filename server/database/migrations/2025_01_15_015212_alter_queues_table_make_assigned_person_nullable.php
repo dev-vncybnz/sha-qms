@@ -11,13 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('queues', function (Blueprint $table) {
-            $table->id();
-            $table->string('student_id', 255);
-            $table->string('ticket_code', 255);
-            $table->tinyInteger('status')->default(0);
-            $table->string('assigned_person');
-            $table->timestamps();
+        Schema::table('queues', function (Blueprint $table) {
+            $table->string('assigned_person')->nullable()->change();
         });
     }
 
@@ -26,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('queues');
+        Schema::table('queues', function (Blueprint $table) {
+            $table->string('assigned_person', 255);
+        });
     }
 };
