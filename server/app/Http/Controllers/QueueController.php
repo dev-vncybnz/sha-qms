@@ -6,7 +6,6 @@ use App\Enums\QueueStatusEnum;
 use App\Enums\RoleEnum;
 use App\Http\Resources\QueueResource;
 use App\Models\Queue;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -92,16 +91,9 @@ class QueueController extends Controller
                 'string',
                 Rule::in([RoleEnum::CASHIER, RoleEnum::REGISTRAR])
             ],
-            'student_id' => [
-                'required',
-                'string',
-                'min:4',
-                'max:6'
-            ]
         ]);
 
         $person = $data['person'];
-        $studentId = $data['student_id'];
 
         // Get latest ticket by specific role
         $personLike = $person == 'cashier' ? 'CAS' : 'REG';
@@ -118,7 +110,7 @@ class QueueController extends Controller
             $latestTicketNumber = intval($latestTicketNumber);
             $latestTicketNumber++;
         }
-        
+
         // Create Ticket Code Prefix
         $code = "CAS-";
 
@@ -130,9 +122,9 @@ class QueueController extends Controller
         $code = $code . str_pad(strval($latestTicketNumber), 4, '0', STR_PAD_LEFT);
 
         $data = [
-            'student_id' => $studentId,
             'ticket_code' => $code,
             'status' => QueueStatusEnum::PENDING,
+            'assigned_person' => $request->assigned_person
         ];
 
         $queue = Queue::create($data);

@@ -18,6 +18,36 @@ class CashierQueueController extends Controller
         return CashierQueueResource::collection($data);
     }
 
+    // Get Latest (IN PROGRESS) Ticket Codes
+    public function latestInProgressTicketCodes(Request $request)
+    {
+        // Cashier 1
+        $cashier1LatestInProgressData = Queue::where('assigned_person', RoleEnum::CASHIER_1)
+            ->where('status', QueueStatusEnum::IN_PROGRESS)
+            ->orderBy('created_at', 'asc')
+            ->first();
+
+        // Cashier 2
+        $cashier2LatestInProgressData = Queue::where('assigned_person', RoleEnum::CASHIER_2)
+            ->where('status', QueueStatusEnum::IN_PROGRESS)
+            ->orderBy('created_at', 'asc')
+            ->first();
+
+        // Registrar
+        $registrarLatestInProgressData = Queue::where('assigned_person', RoleEnum::REGISTRAR)
+            ->where('status', QueueStatusEnum::IN_PROGRESS)
+            ->orderBy('created_at', 'asc')
+            ->first();
+
+        $data = [
+            'cashier_1' => $cashier1LatestInProgressData?->ticket_code,
+            'cashier_2' => $cashier2LatestInProgressData?->ticket_code,
+            'registrar' => $registrarLatestInProgressData?->ticket_code,
+        ];
+
+        return response()->json($data, 200);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->post();

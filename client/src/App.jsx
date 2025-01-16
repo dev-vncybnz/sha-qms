@@ -9,6 +9,7 @@ import CashierQueue from './pages/cashier/Queue';
 import CashierDashboard from './pages/cashier/Dashboard';
 import RegistrarDashboard from './pages/registrar/Dashboard';
 import ManageVideos from './pages/ManageVideos';
+import Template from './pages/Template';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
       <BrowserRouter>
         <AuthContextProvider>
           <Routes>
+            <Route path="/template" element={<Template />} />
             <Route path="/generate-ticket" element={<GenerateTicket />} />
             <Route path="/queue-monitor" element={<QueueMonitor />} />
             <Route path="/login" element={<Login />} />

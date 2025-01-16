@@ -33,6 +33,8 @@ Route::middleware(['api-key', 'auth:sanctum'])->group(function () {
 }); */
 
 Route::middleware(['api-key'])->group(function () {
+    Route::get('/latest-tickets', [CashierQueueController::class, 'latestInProgressTicketCodes']);
+
     Route::post('/generate-ticket', [QueueController::class, 'store']);
     Route::post('/login', [AuthController::class, 'index']);
     Route::delete('/logout', [AuthController::class, 'destroy'])->middleware('auth:sanctum');
@@ -45,8 +47,6 @@ Route::middleware(['api-key'])->group(function () {
         Route::put('/queues', [CashierQueueController::class, 'update']);
     });
 
-    Route::prefix('/videos')->middleware(['auth:sanctum'])->group(function () {
-        Route::get('/', [VideoController::class, 'index']);
-        Route::post('/', [VideoController::class, 'store']);
-    });
+    Route::get('/videos', [VideoController::class, 'index']);
+    Route::post('/videos', [VideoController::class, 'store'])->middleware('auth:sanctum');
 });

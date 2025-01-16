@@ -68,7 +68,7 @@ const Sidebar = (props) => {
             <div className={`${props.className} shadow-xl flex flex-col gap-3 p-5`}>
                 <img src={shaLoonLogo} alt="SHA Loon Logo" />
 
-                <button onClick={() => onClickSidebarItem('dashboard')} className={`rounded-md py-2 ${location.pathname.includes('dashboard') ? 'bg-red-500 text-white hover:bg-red-400 hover:text-white' : 'hover:text-white hover:bg-red-500'}`}>Dashboard</button>
+                <button onClick={() => onClickSidebarItem('')} className={`rounded-md py-2 ${location.pathname.includes('dashboard') ? 'bg-red-500 text-white hover:bg-red-400 hover:text-white' : 'hover:text-white hover:bg-red-500'}`}>Dashboard</button>
                 <button onClick={() => onClickSidebarItem('queue')} className={`rounded-md py-2 ${location.pathname.includes('queue') ? 'bg-red-500 text-white hover:bg-red-400 hover:text-white' : 'hover:text-white hover:bg-red-500'}`}>Queue</button>
                 <button onClick={() => onClickSidebarItem('reports')} className={`rounded-md py-2 ${location.pathname.includes('reports') ? 'bg-red-500 text-white hover:bg-red-400 hover:text-white' : 'hover:text-white hover:bg-red-500'}`}>Reports</button>
                 <button onClick={() => onClickSidebarItem('videos')} className={`rounded-md py-2 ${location.pathname.includes('videos') ? 'bg-red-500 text-white hover:bg-red-400 hover:text-white' : 'hover:text-white hover:bg-red-500'}`}>Videos</button>

@@ -1,12 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react'
 import Swal from 'sweetalert2'
-import Ticket from './Ticket';
+import Ticket from '../components/Ticket';
 import { useReactToPrint } from 'react-to-print';
+import Loader from '../components/Loader';
 
 const GenerateTicket = () => {
 
     const [ticket, setTicket] = useState({});
     const componentRef = useRef();
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (ticket.code && ticket.destination) {
@@ -33,8 +35,7 @@ const GenerateTicket = () => {
 
     const onClickButton = async (person) => {
         const result = await Swal.fire({
-            text: 'Please confirm by typing your ID number',
-            input: 'text',
+            text: 'Please select "YES" to confirm',
             cancelButtonText: "Cancel",
             showCancelButton: true,
             confirmButtonText: "Yes",
@@ -42,21 +43,16 @@ const GenerateTicket = () => {
             customClass: {
                 confirmButton: "w-32",
                 cancelButton: "w-32",
-                input: "text-center"
             },
-            inputValidator: (value) => {
-                if (!value.trim() || value.length > 6) {
-                    return "Please enter valid ID number";
-                }
-            }
         });
 
-        const { isConfirmed, value } = result;
+        const { isConfirmed } = result;
 
         if (isConfirmed) {
+            setLoading(true);
             const baseUrl = import.meta.env.VITE_API_URL;
             const apiKey = import.meta.env.VITE_API_KEY;
-            const url = `${baseUrl}/generate-ticket`;
+            const url = `${baseUrl}/api/generate-ticket`;
             const requestOptions = {
                 method: "POST",
                 headers: {
@@ -66,7 +62,7 @@ const GenerateTicket = () => {
                 },
                 body: JSON.stringify({
                     person,
-                    student_id: value
+                    assigned_person: person === 'registrar' ? 'registrar' : null
                 })
             };
 
@@ -75,12 +71,15 @@ const GenerateTicket = () => {
             const { ticket_code } = responseJSON;
             const destination = person == 'cashier' ? 'Cashier' : 'Registrar';
             setTicket({ code: ticket_code, destination });
+            setLoading(false);
         }
     }
 
     return (
         <div id="generate-ticket">
             <div className="container h-screen flex flex-col justify-center p-10">
+                <Loader loading={loading} />
+
                 <h1 className="text-5xl text-center mb-12 text-center uppercase">Generate Ticket</h1>
 
                 <div className="flex flex-col gap-8">
