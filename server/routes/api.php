@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CashierQueueController;
 use App\Http\Controllers\QueueController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VideoController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -42,5 +43,10 @@ Route::middleware(['api-key'])->group(function () {
         Route::get('/queues', [CashierQueueController::class, 'index']);
         Route::post('/queues', [CashierQueueController::class, 'store']);
         Route::put('/queues', [CashierQueueController::class, 'update']);
+    });
+
+    Route::prefix('/videos')->middleware(['auth:sanctum'])->group(function () {
+        Route::get('/', [VideoController::class, 'index']);
+        Route::post('/', [VideoController::class, 'store']);
     });
 });

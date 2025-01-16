@@ -8,6 +8,7 @@ import NotFound from './pages/NotFound';
 import CashierQueue from './pages/cashier/Queue';
 import CashierDashboard from './pages/cashier/Dashboard';
 import RegistrarDashboard from './pages/registrar/Dashboard';
+import ManageVideos from './pages/ManageVideos';
 
 function App() {
   return (
@@ -19,14 +20,14 @@ function App() {
             <Route path="/queue-monitor" element={<QueueMonitor />} />
             <Route path="/login" element={<Login />} />
 
-            <Route path="/cashier">
-              <Route path="" element={<CashierDashboard />} />
-              <Route path="queue" element={<CashierQueue />} />
-              <Route element={<SecureRoutes />}>
-
+            <Route element={<SecureRoutes />}>
+              <Route path="/cashier">
+                <Route path="" element={<CashierDashboard />} />
+                <Route path="queue" element={<CashierQueue />} />
+                <Route path="videos" element={<ManageVideos />} />
               </Route>
             </Route>
-            
+
             <Route path="/registrar">
               <Route path="" element={<RegistrarDashboard />} />
             </Route>

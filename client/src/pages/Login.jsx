@@ -35,7 +35,7 @@ const Login = () => {
 
         const baseUrl = import.meta.env.VITE_API_URL;
         const apiKey = import.meta.env.VITE_API_KEY;
-        const url = `${baseUrl}/login`;
+        const url = `${baseUrl}/api/login`;
         const requestOptions = {
             method: "POST",
             headers: {
@@ -67,6 +67,7 @@ const Login = () => {
                 return;
             }
 
+            localStorage.setItem("isAuthenticated", true);
             localStorage.setItem("token", token);
             localStorage.setItem("user", JSON.stringify(user));
 
