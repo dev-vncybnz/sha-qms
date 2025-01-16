@@ -6,10 +6,10 @@ import { AuthContextProvider } from './contexts/AuthContext';
 import SecureRoutes from './SecureRoutes';
 import NotFound from './pages/NotFound';
 import CashierQueue from './pages/cashier/Queue';
-import CashierDashboard from './pages/cashier/Dashboard';
-import RegistrarDashboard from './pages/registrar/Dashboard';
+import RegistrarQueue from './pages/registrar/Queue';
 import ManageVideos from './pages/ManageVideos';
 import Template from './pages/Template';
+import Forbidden from './pages/Forbidden';
 
 function App() {
   return (
@@ -24,16 +24,16 @@ function App() {
 
             <Route element={<SecureRoutes />}>
               <Route path="/cashier">
-                <Route path="" element={<CashierDashboard />} />
                 <Route path="queue" element={<CashierQueue />} />
                 <Route path="videos" element={<ManageVideos />} />
               </Route>
+              
+              <Route path="/registrar">
+                <Route path="queue" element={<RegistrarQueue />} />
+              </Route>
             </Route>
 
-            <Route path="/registrar">
-              <Route path="" element={<RegistrarDashboard />} />
-            </Route>
-
+            <Route path="/forbidden" element={<Forbidden />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthContextProvider>

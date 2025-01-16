@@ -50,28 +50,34 @@ const GenerateTicket = () => {
 
         if (isConfirmed) {
             setLoading(true);
-            const baseUrl = import.meta.env.VITE_API_URL;
-            const apiKey = import.meta.env.VITE_API_KEY;
-            const url = `${baseUrl}/api/generate-ticket`;
-            const requestOptions = {
-                method: "POST",
-                headers: {
-                    Accept: "application/json",
-                    "Content-Type": "application/json",
-                    "X-API-KEY": apiKey,
-                },
-                body: JSON.stringify({
-                    person,
-                    assigned_person: person === 'registrar' ? 'registrar' : null
-                })
-            };
 
-            const response = await fetch(url, requestOptions);
-            const responseJSON = await response.json();
-            const { ticket_code } = responseJSON;
-            const destination = person == 'cashier' ? 'Cashier' : 'Registrar';
-            setTicket({ code: ticket_code, destination });
-            setLoading(false);
+            try {
+                const baseUrl = import.meta.env.VITE_API_URL;
+                const apiKey = import.meta.env.VITE_API_KEY;
+                const url = `${baseUrl}/api/generate-ticket`;
+                const requestOptions = {
+                    method: "POST",
+                    headers: {
+                        Accept: "application/json",
+                        "Content-Type": "application/json",
+                        "X-API-KEY": apiKey,
+                    },
+                    body: JSON.stringify({
+                        person,
+                        assigned_person: person === 'registrar' ? 'registrar' : null
+                    })
+                };
+
+                const response = await fetch(url, requestOptions);
+                const responseJSON = await response.json();
+                const { ticket_code } = responseJSON;
+                const destination = person == 'cashier' ? 'Cashier' : 'Registrar';
+                setTicket({ code: ticket_code, destination });
+            } catch (error) {
+                console.log(`API Error: ${error}`);
+            } finally {
+                setLoading(false);
+            }
         }
     }
 

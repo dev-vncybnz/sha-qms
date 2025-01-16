@@ -1,13 +1,18 @@
 import React from 'react'
 import { useAuth } from './contexts/AuthContext'
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 const SecureRoutes = () => {
 
-    const { loading, isAuthenticated } = useAuth();
+    const location = useLocation();
+    const { loading, user, isAuthenticated } = useAuth();
 
     if (loading) {
         return <div>Loading...</div>;
+    }
+
+    if(!location.pathname.includes(`${user.role}`)) {
+        return <Navigate to="/forbidden" />
     }
 
     return !loading && isAuthenticated ? <Outlet /> : <Navigate to="/login" />
