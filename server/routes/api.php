@@ -44,6 +44,7 @@ Route::middleware(['api-key'])->group(function () {
     Route::prefix('/cashier')->group(function () {
         Route::get('/queues', [CashierQueueController::class, 'index']);
         Route::post('/queues', [CashierQueueController::class, 'store']);
+        Route::put('/queues/{queue}/skip', [CashierQueueController::class, 'skipQueue']);
         Route::put('/queues', [CashierQueueController::class, 'update']);
     });
 

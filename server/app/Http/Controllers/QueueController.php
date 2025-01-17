@@ -15,6 +15,22 @@ class QueueController extends Controller
 {
     public function index(Request $request)
     {
+        $validated = $request->validate([
+            'page' => [
+                'required',
+                'integer',
+                'min:1'
+            ],
+            'per_page' => [
+                'required',
+                'integer',
+                'min:1'
+            ]
+        ]);
+
+        $page = $validated['page'];
+        $perPage = $validated['per_page'];
+
         $query = Queue::join('users', 'users.id', 'queues.assigned_person')
             ->select(
                 'queues.id as queue_id',
@@ -54,7 +70,7 @@ class QueueController extends Controller
             $query->orderBy('queues.created_at', $request->order_by);
         }
 
-        $data = $query->paginate();
+        $data = $query->paginate($perPage);
 
         return QueueResource::collection($data);
     }

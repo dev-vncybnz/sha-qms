@@ -12,16 +12,27 @@ class CashierQueueController extends Controller
 {
     public function index(Request $request)
     {
+        $request->validate([
+            'page' => [
+                'required',
+                'integer',
+                'min:1'
+            ]
+        ]);
+
         $query = Queue::where('ticket_code', 'like', '%CAS%')
-                    ->whereDate('created_at', now());
+            ->orderBy('created_at', 'asc')
+            ->whereDate('created_at', now());
+
         $data = $query->paginate();
 
         return CashierQueueResource::collection($data);
     }
 
-    // Get Latest (IN PROGRESS) Ticket Codes
     public function latestInProgressTicketCodes(Request $request)
     {
+        $onlyTicketCodes = $request->only_ticket_codes;
+
         // Cashier 1
         $cashier1LatestInProgressData = Queue::where('assigned_person', RoleEnum::CASHIER_1)
             ->where('status', QueueStatusEnum::IN_PROGRESS)
@@ -40,13 +51,33 @@ class CashierQueueController extends Controller
             ->orderBy('created_at', 'asc')
             ->first();
 
-        $data = [
-            'cashier_1' => $cashier1LatestInProgressData?->ticket_code,
-            'cashier_2' => $cashier2LatestInProgressData?->ticket_code,
-            'registrar' => $registrarLatestInProgressData?->ticket_code,
-        ];
+        $data = null;
+
+        if ($onlyTicketCodes) {
+            $data = [
+                'cashier_1' => $cashier1LatestInProgressData?->ticket_code,
+                'cashier_2' => $cashier2LatestInProgressData?->ticket_code,
+                'registrar' => $registrarLatestInProgressData?->ticket_code,
+            ];
+        } else {
+            $data = [
+                'cashier_1' => $cashier1LatestInProgressData,
+                'cashier_2' => $cashier2LatestInProgressData,
+                'registrar' => $registrarLatestInProgressData,
+            ];
+        }
 
         return response()->json($data, 200);
+    }
+
+    public function skipQueue(Queue $queue)
+    {
+        $queue->created_at = now();
+        $queue->status = QueueStatusEnum::PENDING;
+        $queue->assigned_person = null;
+        $queue->save();
+
+        return response()->json(true, 200);
     }
 
     public function store(Request $request)

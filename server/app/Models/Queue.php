@@ -9,10 +9,13 @@ class Queue extends Model
 {
     use HasFactory;
 
+    protected $perPage = 10;
+
     protected $fillable = [
         'ticket_code',
         'status',
         'assigned_person',
+        'created_at'
     ];
 
 }

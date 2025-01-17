@@ -6,14 +6,21 @@ import Swal from 'sweetalert2'
 
 const Queue = () => {
 
+    const [cashier1Ticket, setCashier1Ticket] = useState(null);
+    const [cashier2Ticket, setCashier2Ticket] = useState(null);
+    const [page, setPage] = useState(1);
     const [response, setResponse] = useState({});
+    const [refresh, setRefresh] = useState(false);
 
     useEffect(() => {
+        setCashier1Ticket(null);
+        setCashier2Ticket(null);
+
         const controller = new AbortController();
         const fetchData = async () => {
             const baseUrl = import.meta.env.VITE_API_URL;
             const apiKey = import.meta.env.VITE_API_KEY;
-            const url = `${baseUrl}/api/cashier/queues`;
+            const url = `${baseUrl}/api/latest-tickets`;
             const requestOptions = {
                 signal: controller.signal,
                 method: 'GET',
@@ -27,22 +34,60 @@ const Queue = () => {
             const response = await fetch(url, requestOptions);
             const responseJSON = await response.json();
 
+            const { cashier_1, cashier_2 } = responseJSON;
+
+            setCashier1Ticket(cashier_1);
+            setCashier2Ticket(cashier_2);
+        };
+
+        fetchData();
+
+        return () => {
+            setRefresh(false);
+            controller.abort();
+        }
+    }, [refresh]);
+
+    useEffect(() => {
+        setResponse({});
+
+        const controller = new AbortController();
+        const fetchData = async () => {
+            const baseUrl = import.meta.env.VITE_API_URL;
+            const apiKey = import.meta.env.VITE_API_KEY;
+            const url = `${baseUrl}/api/cashier/queues?page=${page}`;
+            const requestOptions = {
+                signal: controller.signal,
+                method: 'GET',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-API-KEY': apiKey,
+                },
+            };
+
+            const response = await fetch(url, requestOptions);
+            const responseJSON = await response.json();
+
+            console.log(responseJSON);
+
             setResponse(responseJSON);
         };
 
         fetchData();
 
         return () => {
+            setRefresh(false);
             controller.abort();
         }
-    }, []);
+    }, [refresh, page]);
 
     const formatStatus = status => ['Pending', 'In Progress', 'Completed'][status];
 
     const formatCashier = person => {
         let formatted = person.replace('_', ' ');
         formatted = formatted.charAt(0).toUpperCase() + formatted.substring(1);
-        
+
         return formatted;
     };
 
@@ -151,6 +196,50 @@ const Queue = () => {
         console.log(responseJSON);
     }
 
+    const onClickRefresh = () => {
+        setPage(1);
+        setRefresh(true);
+    };
+
+    const onClickPrevPagination = () => setPage(prev => --prev);
+
+    const onClickNextPagination = () => setPage(prev => ++prev);
+
+    const onClickSkip = async (cashier) => {
+        const result = await Swal.fire({
+            title: 'Please select "Yes" to confirm',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes',
+            cancelButtonText: 'No',
+            reverseButtons: true,
+            customClass: {
+                confirmButton: 'bg-gray-300',
+                cancelButton: 'bg-red-500'
+            }
+        });
+
+        if (result.isConfirmed) {
+            const id = cashier == 'cashier_1' ? cashier1Ticket.id : cashier2Ticket.id;
+            const baseUrl = import.meta.env.VITE_API_URL;
+            const apiKey = import.meta.env.VITE_API_KEY;
+            const url = `${baseUrl}/api/cashier/queues/${id}/skip`;
+            const requestOptions = {
+                method: 'PUT',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-API-KEY': apiKey,
+                },
+            };
+
+            const response = await fetch(url, requestOptions);
+            const responseJSON = await response.json();
+
+            setRefresh(true);
+        }
+    }
+
     return (
         <>
             <div className="flex h-screen">
@@ -160,22 +249,22 @@ const Queue = () => {
                 <div className="w-full px-5 py-3">
                     <div className="flex justify-between">
                         <div className="w-1/4 text-left">
-                            <p className="text-4xl">CAS-0001</p>
+                            <p className="text-4xl">{cashier1Ticket ? cashier1Ticket.ticket_code : "----"}</p>
                             <p>Cashier 1</p>
                             <div className="flex gap-5">
                                 <button onClick={() => onClickCall("CAS-001", "cashier_1")} className="text-white rounded-md bg-red-500 hover:bg-red-400 min-w-20 mt-3">Call</button>
-                                <button className="text-white rounded-md bg-teal-500 hover:bg-teal-400 min-w-20 mt-3">Skip</button>
+                                <button className="text-white rounded-md bg-teal-500 hover:bg-teal-400 min-w-20 mt-3" onClick={() => onClickSkip('cashier_1')}>Skip</button>
                             </div>
                         </div>
 
                         <button className="text-white rounded-md py-2 bg-blue-500 hover:bg-blue-400 self-center min-w-36" onClick={onClickNext}>Next</button>
 
                         <div className="w-1/4 text-right">
-                            <p className="text-4xl">CAS-0002</p>
+                            <p className="text-4xl">{cashier2Ticket ? cashier2Ticket.ticket_code : "----"}</p>
                             <p>Cashier 2</p>
                             <div className="flex gap-5 justify-end">
                                 <button className="text-white rounded-md bg-red-500 hover:bg-red-400 min-w-20 mt-3">Call</button>
-                                <button className="text-white rounded-md bg-teal-500 hover:bg-teal-400 min-w-20 mt-3">Skip</button>
+                                <button className="text-white rounded-md bg-teal-500 hover:bg-teal-400 min-w-20 mt-3" onClick={() => onClickSkip('cashier_2')}>Skip</button>
                             </div>
                         </div>
                     </div>
@@ -184,7 +273,7 @@ const Queue = () => {
                     <table className="mt-10 w-full">
                         <thead className="bg-red-500 text-white">
                             <tr>
-                                <th className="p-1 text-left">Ticket Code</th>
+                                <th className="p-1 pl-5 text-left">Ticket Code</th>
                                 <th className="p-1 text-left">Assigned Cashier</th>
                                 <th className="p-1 text-left">Status</th>
                                 <th className="p-1 text-left">Queue Date</th>
@@ -193,26 +282,40 @@ const Queue = () => {
                         <tbody className="shadow-md">
                             {response.data && response.data.map(item => (
                                 <tr key={item.id}>
-                                    <td className="p-1">{item.ticket_code}</td>
+                                    <td className="p-1 pl-5">{item.ticket_code}</td>
                                     <td className="p-1">{item.assigned_person ? formatCashier(item.assigned_person) : "None"}</td>
                                     <td className="p-1">{formatStatus(item.status)}</td>
                                     <td className="p-1">{formatDateTime(item.created_at)}</td>
                                 </tr>
                             ))}
-                            {/* <tr>
-                                <td colSpan="5" className="text-center text-gray-300 py-5">No available data</td>
-                            </tr> */}
+                            {!response.data && (
+                                <tr>
+                                    <td colSpan="5" className="text-center text-gray-300 py-5">No available data</td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
 
                     {/* Pagination */}
                     <div className="mt-3 flex justify-between items-center">
-                        <button className="hover:underline">Refresh</button>
-                        <div className="flex items-center gap-5">
-                            <p>Showing 1 ~ 5 of 100 items</p>
-                            <FontAwesomeIcon icon={faChevronLeft} className="text-gray-300 cursor-pointer" />
-                            <FontAwesomeIcon icon={faChevronRight} className="text-gray-300 cursor-pointer" />
-                        </div>
+                        <button className="hover:underline" onClick={onClickRefresh}>Refresh</button>
+
+                        {response && response.data && (
+                            <div className="flex items-center gap-5">
+                                <p>
+                                    Showing {(response.meta.current_page - 1) * response.meta.per_page + 1}
+                                    ~
+                                    {Math.min(response.meta.current_page * response.meta.per_page, response.meta.total)} of {response.meta.total} items
+                                </p>
+
+                                <FontAwesomeIcon icon={faChevronLeft}
+                                    onClick={response.links.prev ? onClickPrevPagination : null} className={`text-${response.links.prev ? 'black' : 'gray'}-300 cursor-pointer`} />
+
+                                <FontAwesomeIcon icon={faChevronRight}
+                                    onClick={response.links.next ? onClickNextPagination : null} className={`text-${response.links.next ? 'black' : 'gray'}-300 cursor-pointer`} />
+
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
