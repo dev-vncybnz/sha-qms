@@ -12,7 +12,8 @@ class CashierQueueController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Queue::whereIn('assigned_person', [RoleEnum::CASHIER_1, RoleEnum::CASHIER_2]);
+        $query = Queue::where('ticket_code', 'like', '%CAS%')
+                    ->whereDate('created_at', now());
         $data = $query->paginate();
 
         return CashierQueueResource::collection($data);

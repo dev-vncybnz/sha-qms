@@ -13,7 +13,7 @@ const Queue = () => {
         const fetchData = async () => {
             const baseUrl = import.meta.env.VITE_API_URL;
             const apiKey = import.meta.env.VITE_API_KEY;
-            const url = `${baseUrl}/cashier/queues`;
+            const url = `${baseUrl}/api/cashier/queues`;
             const requestOptions = {
                 signal: controller.signal,
                 method: 'GET',
@@ -184,7 +184,6 @@ const Queue = () => {
                     <table className="mt-10 w-full">
                         <thead className="bg-red-500 text-white">
                             <tr>
-                                <th className="p-1 text-left">Student ID</th>
                                 <th className="p-1 text-left">Ticket Code</th>
                                 <th className="p-1 text-left">Assigned Cashier</th>
                                 <th className="p-1 text-left">Status</th>
@@ -194,9 +193,8 @@ const Queue = () => {
                         <tbody className="shadow-md">
                             {response.data && response.data.map(item => (
                                 <tr key={item.id}>
-                                    <td className="p-1">{item.student_id}</td>
                                     <td className="p-1">{item.ticket_code}</td>
-                                    <td className="p-1">{formatCashier(item.assigned_person)}</td>
+                                    <td className="p-1">{item.assigned_person ? formatCashier(item.assigned_person) : "None"}</td>
                                     <td className="p-1">{formatStatus(item.status)}</td>
                                     <td className="p-1">{formatDateTime(item.created_at)}</td>
                                 </tr>
