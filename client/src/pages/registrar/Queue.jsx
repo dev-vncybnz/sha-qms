@@ -301,7 +301,7 @@ const Queue = () => {
                                     <td className="p-1">{formatDateTime(item.created_at)}</td>
                                 </tr>
                             ))}
-                            {!response.data && (
+                            {response.data && response.data.length == 0 && (
                                 <tr>
                                     <td colSpan="5" className="text-center text-gray-300 py-5">No available data</td>
                                 </tr>

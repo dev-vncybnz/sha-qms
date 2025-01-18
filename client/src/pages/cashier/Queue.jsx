@@ -3,6 +3,7 @@ import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Sidebar from '../../components/Sidebar'
 import Swal from 'sweetalert2'
+import { useAuth } from '../../contexts/AuthContext'
 
 const Queue = () => {
 
@@ -12,7 +13,9 @@ const Queue = () => {
     const [tab, setTab] = useState(1);
     const [response, setResponse] = useState({});
     const [refresh, setRefresh] = useState(false);
+    const authContext = useAuth();
 
+    // Get latest cashier tickets
     useEffect(() => {
         const controller = new AbortController();
         const fetchData = async () => {
@@ -46,6 +49,7 @@ const Queue = () => {
         }
     }, [refresh]);
 
+    // Get cashier tickets
     useEffect(() => {
         setResponse({});
 
@@ -53,7 +57,8 @@ const Queue = () => {
         const fetchData = async () => {
             const baseUrl = import.meta.env.VITE_API_URL;
             const apiKey = import.meta.env.VITE_API_KEY;
-            const url = `${baseUrl}/api/cashier/queues?page=${page}&status=${tab}`;
+            const token = authContext.token;
+            const url = `${baseUrl}/api/admin/queues?page=${page}&status=${tab}&person=cashier`;
             const requestOptions = {
                 signal: controller.signal,
                 method: 'GET',
@@ -61,13 +66,12 @@ const Queue = () => {
                     Accept: 'application/json',
                     'Content-Type': 'application/json',
                     'X-API-KEY': apiKey,
+                    Authorization: `Bearer ${token}`,
                 },
             };
 
             const response = await fetch(url, requestOptions);
             const responseJSON = await response.json();
-
-            console.log(responseJSON);
 
             setResponse(responseJSON);
         };
@@ -153,36 +157,40 @@ const Queue = () => {
     }
 
     const onClickNext = async () => {
-        Swal.fire({
+        const showConfirmButton = response.data.length == 1 && response.data[0].assigned_person && response.data[0].assigned_person != 'cashier_1' ? false : true
+        const showCancelButton = response.data.length == 1 && response.data[0].assigned_person && response.data[0].assigned_person != 'cashier_2' ? false : true
+
+        const result = await Swal.fire({
             title: 'Select a Cashier',
             icon: 'question',
-            showCancelButton: true,
+            showConfirmButton,
+            showCancelButton,
             confirmButtonText: 'Cashier 1',
             cancelButtonText: 'Cashier 2',
-        }).then((result) => {
-            if (result.isConfirmed) {
-                assignCashierQueueTicket('cashier_1');
-            } else if (result.dismiss === Swal.DismissReason.cancel) {
-                assignCashierQueueTicket('cashier_2');
-            }
         });
+
+        if (result.isConfirmed) {
+            assignCashierQueueTicket('cashier_1');
+        } else if (result.dismiss === Swal.DismissReason.cancel) {
+            assignCashierQueueTicket('cashier_2');
+        }
     }
 
-    const onClickCall = (code, cashier) => {
-        speakMessage(code, cashier);
-    }
+    const onClickCall = (code, cashier) => speakMessage(code, cashier);
 
     const assignCashierQueueTicket = async (cashier) => {
         try {
             const baseUrl = import.meta.env.VITE_API_URL;
             const apiKey = import.meta.env.VITE_API_KEY;
-            const url = `${baseUrl}/api/cashier/queues`;
+            const token = authContext.token;
+            const url = `${baseUrl}/api/admin/queues`;
             const requestOptions = {
                 method: 'PUT',
                 headers: {
                     Accept: 'application/json',
                     'Content-Type': 'application/json',
                     'X-API-KEY': apiKey,
+                    Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     'person': cashier
@@ -270,7 +278,7 @@ const Queue = () => {
                         </div>
 
                         {
-                            response && (
+                            response && response.data && response.data.length > 0 && (
                                 <button className="text-white rounded-md py-2 bg-blue-500 hover:bg-blue-400 self-center min-w-36" onClick={onClickNext}>Next</button>
                             )
                         }
@@ -311,7 +319,7 @@ const Queue = () => {
                                     <td className="p-1">{formatDateTime(item.created_at)}</td>
                                 </tr>
                             ))}
-                            {!response.data && (
+                            {response.data && response.data.length == 0 && (
                                 <tr>
                                     <td colSpan="5" className="text-center text-gray-300 py-5">No available data</td>
                                 </tr>

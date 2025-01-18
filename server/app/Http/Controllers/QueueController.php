@@ -108,8 +108,8 @@ class QueueController extends Controller
         $personLike = $person == 'cashier' ? 'CAS' : 'REG';
         $latestTicketData = Queue::where('ticket_code', 'like', "%$personLike%")
             ->whereDate('created_at', now())
+            ->orderByRaw('CAST(SUBSTRING(ticket_code, 5) AS UNSIGNED) DESC')
             ->lockForUpdate()
-            ->latest()
             ->first();
 
         $latestTicketNumber = 1;
@@ -170,9 +170,10 @@ class QueueController extends Controller
     {
         $person = $request->post('person');
 
-        // Set the status of person's in progress queue data to Completed
+        // Set the status of person's in progress queue ticket to Completed
         $queue = Queue::where('assigned_person', $person)
             ->where('status', QueueStatusEnum::IN_PROGRESS)
+            ->whereDate('created_at', now())
             ->orderBy('created_at', 'asc')
             ->first();
 
@@ -181,11 +182,17 @@ class QueueController extends Controller
             $queue->save();
         }
 
-        // Get new queue data and assign to the person
-        $personLike = $person == 'cashier' ? 'CAS' : 'REG';
-        $newQueueData = Queue::where('ticket_code', 'like', "%$personLike%")
+        // Get new queue ticket and assign to the person 
+        $query = Queue::where('status', QueueStatusEnum::PENDING);
+
+        if ($person == 'registrar') {
+            $query->where('assigned_person', $person);
+        } else {
+            $query->whereNull('assigned_person');
+        }
+
+        $newQueueData = $query->whereDate('created_at', now())
             ->where('status', QueueStatusEnum::PENDING)
-            ->whereDate('created_at', now())
             ->orderBy('created_at', 'asc')
             ->first();
 
