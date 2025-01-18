@@ -15,7 +15,7 @@ const Sidebar = (props) => {
         const baseUrl = import.meta.env.VITE_API_URL;
         const apiKey = import.meta.env.VITE_API_KEY;
         const token = authContext.token;
-        const url = `${baseUrl}/logout`;
+        const url = `${baseUrl}/api/logout`;
         const requestOptions = {
             method: 'DELETE',
             headers: {
@@ -70,7 +70,9 @@ const Sidebar = (props) => {
 
                 <button onClick={() => onClickSidebarItem('queue')} className={`rounded-md py-2 ${location.pathname.includes('queue') ? 'bg-red-500 text-white hover:bg-red-400 hover:text-white' : 'hover:text-white hover:bg-red-500'}`}>Queue</button>
                 <button onClick={() => onClickSidebarItem('reports')} className={`rounded-md py-2 ${location.pathname.includes('reports') ? 'bg-red-500 text-white hover:bg-red-400 hover:text-white' : 'hover:text-white hover:bg-red-500'}`}>Reports</button>
-                <button onClick={() => onClickSidebarItem('videos')} className={`rounded-md py-2 ${location.pathname.includes('videos') ? 'bg-red-500 text-white hover:bg-red-400 hover:text-white' : 'hover:text-white hover:bg-red-500'}`}>Videos</button>
+                {authContext.user.role == "cashier" && (
+                    <button onClick={() => onClickSidebarItem('videos')} className={`rounded-md py-2 ${location.pathname.includes('videos') ? 'bg-red-500 text-white hover:bg-red-400 hover:text-white' : 'hover:text-white hover:bg-red-500'}`}>Videos</button>
+                )}
 
                 <button onClick={onClickLogout} className="rounded-md py-2 hover:text-white hover:bg-red-500">Logout</button>
             </div>

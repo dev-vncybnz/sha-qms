@@ -10,6 +10,7 @@ import RegistrarQueue from './pages/registrar/Queue';
 import ManageVideos from './pages/ManageVideos';
 import Template from './pages/Template';
 import Forbidden from './pages/Forbidden';
+import CashierReports from './pages/cashier/Reports';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
             <Route element={<SecureRoutes />}>
               <Route path="/cashier">
                 <Route path="queue" element={<CashierQueue />} />
+                <Route path="reports" element={<CashierReports />} />
                 <Route path="videos" element={<ManageVideos />} />
               </Route>
               

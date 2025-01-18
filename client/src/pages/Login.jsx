@@ -91,7 +91,7 @@ const Login = () => {
     return (
         <div id="admin-login">
             <div className="container h-screen flex justify-center items-center">
-                <div className="w-1/3 shadow-md p-10 rounded-xl">
+                <div className="w-2/5 shadow-md p-10 rounded-xl">
                     <h1 className="text-center text-3xl uppercase mb-10">Login</h1>
 
                     <form onSubmit={handleSubmit}>

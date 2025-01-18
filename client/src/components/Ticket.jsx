@@ -5,9 +5,9 @@ const Ticket = (props, ref) => {
 
     return (
         <div ref={ref} className="w-fit flex flex-col items-center text-center gap-10 p-10 border-2 border-black mx-auto mt-5">
-            <p>Your Ticket Number</p>
-            <div>
-                <p>Please proceed to {destination} when your number is called</p>
+            <p>Please proceed to {destination} when your number is called</p>
+            <div className="w-full">
+                <p>Your Ticket Number</p>
                 <p className="text-4xl">{code}</p>
 
                 {

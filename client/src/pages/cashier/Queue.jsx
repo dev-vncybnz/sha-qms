@@ -9,13 +9,11 @@ const Queue = () => {
     const [cashier1Ticket, setCashier1Ticket] = useState(null);
     const [cashier2Ticket, setCashier2Ticket] = useState(null);
     const [page, setPage] = useState(1);
+    const [tab, setTab] = useState(1);
     const [response, setResponse] = useState({});
     const [refresh, setRefresh] = useState(false);
 
     useEffect(() => {
-        setCashier1Ticket(null);
-        setCashier2Ticket(null);
-
         const controller = new AbortController();
         const fetchData = async () => {
             const baseUrl = import.meta.env.VITE_API_URL;
@@ -55,7 +53,7 @@ const Queue = () => {
         const fetchData = async () => {
             const baseUrl = import.meta.env.VITE_API_URL;
             const apiKey = import.meta.env.VITE_API_KEY;
-            const url = `${baseUrl}/api/cashier/queues?page=${page}`;
+            const url = `${baseUrl}/api/cashier/queues?page=${page}&status=${tab}`;
             const requestOptions = {
                 signal: controller.signal,
                 method: 'GET',
@@ -175,25 +173,31 @@ const Queue = () => {
     }
 
     const assignCashierQueueTicket = async (cashier) => {
-        const baseUrl = import.meta.env.VITE_API_URL;
-        const apiKey = import.meta.env.VITE_API_KEY;
-        const url = `${baseUrl}/cashier/queues`;
-        const requestOptions = {
-            method: 'PUT',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-                'X-API-KEY': apiKey,
-            },
-            body: JSON.stringify({
-                'person': cashier
-            })
-        };
+        try {
+            const baseUrl = import.meta.env.VITE_API_URL;
+            const apiKey = import.meta.env.VITE_API_KEY;
+            const url = `${baseUrl}/api/cashier/queues`;
+            const requestOptions = {
+                method: 'PUT',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-API-KEY': apiKey,
+                },
+                body: JSON.stringify({
+                    'person': cashier
+                })
+            };
 
-        const response = await fetch(url, requestOptions);
-        const responseJSON = await response.json();
+            const response = await fetch(url, requestOptions);
+            const responseJSON = await response.json();
+            const { ticket_code } = responseJSON;
 
-        console.log(responseJSON);
+            setRefresh(true);
+            speakMessage(ticket_code, cashier);
+        } catch (error) {
+            console.log(`API Error: ${error}`);
+        }
     }
 
     const onClickRefresh = () => {
@@ -214,7 +218,7 @@ const Queue = () => {
             cancelButtonText: 'No',
             reverseButtons: true,
             customClass: {
-                confirmButton: 'bg-gray-300',
+                confirmButton: 'bg-gray-300 text-black',
                 cancelButton: 'bg-red-500'
             }
         });
@@ -240,43 +244,62 @@ const Queue = () => {
         }
     }
 
+    const onClickTab = (tab) => {
+        setTab(tab);
+
+        setRefresh(true);
+    }
+
     return (
         <>
             <div className="flex h-screen">
                 <Sidebar className="w-1/5" />
 
                 {/* Content */}
-                <div className="w-full px-5 py-3">
+                <div className="w-full min-h-full px-5 py-3">
                     <div className="flex justify-between">
                         <div className="w-1/4 text-left">
                             <p className="text-4xl">{cashier1Ticket ? cashier1Ticket.ticket_code : "----"}</p>
                             <p>Cashier 1</p>
-                            <div className="flex gap-5">
-                                <button onClick={() => onClickCall("CAS-001", "cashier_1")} className="text-white rounded-md bg-red-500 hover:bg-red-400 min-w-20 mt-3">Call</button>
-                                <button className="text-white rounded-md bg-teal-500 hover:bg-teal-400 min-w-20 mt-3" onClick={() => onClickSkip('cashier_1')}>Skip</button>
-                            </div>
+                            {cashier1Ticket && (
+                                <div className="flex gap-5">
+                                    <button onClick={() => onClickCall(cashier1Ticket.ticket_code, "cashier_1")} className="text-white rounded-md bg-red-500 hover:bg-red-400 min-w-20 mt-3">Call</button>
+                                    <button className="text-white rounded-md bg-teal-500 hover:bg-teal-400 min-w-20 mt-3" onClick={() => onClickSkip('cashier_1')}>Skip</button>
+                                </div>
+                            )}
                         </div>
 
-                        <button className="text-white rounded-md py-2 bg-blue-500 hover:bg-blue-400 self-center min-w-36" onClick={onClickNext}>Next</button>
+                        {
+                            response && (
+                                <button className="text-white rounded-md py-2 bg-blue-500 hover:bg-blue-400 self-center min-w-36" onClick={onClickNext}>Next</button>
+                            )
+                        }
 
                         <div className="w-1/4 text-right">
                             <p className="text-4xl">{cashier2Ticket ? cashier2Ticket.ticket_code : "----"}</p>
                             <p>Cashier 2</p>
-                            <div className="flex gap-5 justify-end">
-                                <button className="text-white rounded-md bg-red-500 hover:bg-red-400 min-w-20 mt-3">Call</button>
-                                <button className="text-white rounded-md bg-teal-500 hover:bg-teal-400 min-w-20 mt-3" onClick={() => onClickSkip('cashier_2')}>Skip</button>
-                            </div>
+                            {cashier2Ticket && (
+                                <div className="flex gap-5 justify-end">
+                                    <button className="text-white rounded-md bg-red-500 hover:bg-red-400 min-w-20 mt-3" onClick={() => onClickCall(cashier2Ticket.ticket_code, "cashier_2")}>Call</button>
+                                    <button className="text-white rounded-md bg-teal-500 hover:bg-teal-400 min-w-20 mt-3" onClick={() => onClickSkip('cashier_2')}>Skip</button>
+                                </div>
+                            )}
                         </div>
                     </div>
 
+                    <div className="flex mt-10 gap-3">
+                        <button onClick={() => onClickTab(1)} className={`rounded-full py-2 px-3 ${tab == 1 ? 'bg-red-500 text-white hover:bg-red-400' : 'hover:text-white hover:bg-red-500'}`}>Waiting List</button>
+                        <button onClick={() => onClickTab(2)} className={`rounded-full py-2 px-3 ${tab == 2 ? 'bg-red-500 text-white hover:bg-red-400' : 'hover:text-white hover:bg-red-500'}`}>Completed</button>
+                    </div>
+
                     {/* Queue Table */}
-                    <table className="mt-10 w-full">
-                        <thead className="bg-red-500 text-white">
+                    <table className="mt-3 w-full">
+                        <thead className="bg-gray-200">
                             <tr>
-                                <th className="p-1 pl-5 text-left">Ticket Code</th>
-                                <th className="p-1 text-left">Assigned Cashier</th>
-                                <th className="p-1 text-left">Status</th>
-                                <th className="p-1 text-left">Queue Date</th>
+                                <th className="p-1 py-2 pl-5 text-left font-normal">Ticket Code</th>
+                                <th className="p-1 py-2 text-left font-normal">Assigned Cashier</th>
+                                <th className="p-1 py-2 text-left font-normal">Status</th>
+                                <th className="p-1 py-2 text-left font-normal">Queue Date</th>
                             </tr>
                         </thead>
                         <tbody className="shadow-md">
@@ -297,10 +320,10 @@ const Queue = () => {
                     </table>
 
                     {/* Pagination */}
-                    <div className="mt-3 flex justify-between items-center">
+                    <div className="my-3 flex justify-between items-center">
                         <button className="hover:underline" onClick={onClickRefresh}>Refresh</button>
 
-                        {response && response.data && (
+                        {response && response.data && response.data.length > 0 && (
                             <div className="flex items-center gap-5">
                                 <p>
                                     Showing {(response.meta.current_page - 1) * response.meta.per_page + 1}

@@ -80,7 +80,7 @@ const QueueMonitor = () => {
         const controller = new AbortController();
         const intervalId = setInterval(async () => {
             const apiKey = import.meta.env.VITE_API_KEY;
-            const url = `${import.meta.env.VITE_API_URL}/api/latest-tickets`;
+            const url = `${import.meta.env.VITE_API_URL}/api/latest-tickets?only_ticket_codes=true`;
             const requestOptions = {
                 signal: controller.signal,
                 method: "GET",
@@ -117,30 +117,30 @@ const QueueMonitor = () => {
         <div id="queue-monitor" className="h-screen">
             <div className="h-full w-3/4 mx-auto">
                 <div className="flex w-full h-full items-center">
-                    <div className="w-1/2 border-blue-500 flex flex-col gap-10 mb-20 xl:mb-32 xl:gap-32">
+                    <div className="w-1/2 border-blue-500 flex flex-col gap-10 mb-20 2xl:mb-32 2xl:gap-32">
                         <div className="text-center">
-                            <p className="text-3xl xl:text-8xl">Cashier 1</p>
-                            <p className="text-5xl font-bold text-red-500 mt-3 xl:text-9xl xl:mt-5">{latestTickets.cashier_1 ?? '----'}</p>
+                            <p className="text-3xl xl:text-4xl 2xl:text-8xl">Cashier 1</p>
+                            <p className="text-5xl xl:text-6xl font-bold text-red-500 mt-3 2xl:text-9xl 2xl:mt-5">{latestTickets.cashier_1 ?? '----'}</p>
                         </div>
                         <div className="text-center">
-                            <p className="text-3xl xl:text-8xl">Cashier 2</p>
-                            <p className="text-5xl font-bold text-blue-500 mt-3 xl:text-9xl xl:mt-5">{latestTickets.cashier_2 ?? '----'}</p>
+                            <p className="text-3xl xl:text-4xl 2xl:text-8xl">Cashier 2</p>
+                            <p className="text-5xl xl:text-6xl font-bold text-blue-500 mt-3 2xl:text-9xl 2xl:mt-5">{latestTickets.cashier_2 ?? '----'}</p>
                         </div>
                         <div className="text-center">
-                            <p className="text-3xl xl:text-8xl">Registrar</p>
-                            <p className="text-5xl font-bold text-green-500 mt-3 xl:text-9xl xl:mt-5">{latestTickets.registrar ?? '----'}</p>
+                            <p className="text-3xl xl:text-4xl 2xl:text-8xl">Registrar</p>
+                            <p className="text-5xl xl:text-6xl font-bold text-green-500 mt-3 2xl:text-9xl 2xl:mt-5">{latestTickets.registrar ?? '----'}</p>
                         </div>
                     </div>
-                    <div className="w-1/2 xl:w-3/4 xl:ml-32 flex flex-col gap-10">
+                    <div className="w-1/2 2xl:w-3/4 2xl:ml-32 flex flex-col gap-10">
                         <video ref={videoRef} className="shadow-xl rounded-2xl border border-2 border-black offset-5 bg-white block w-full h-full object-cover overflow-hidden" src={videoUrl} autoPlay muted loop controls={false}>
                             Your browser does not support the video tag.
                         </video>
-                        <div className="flex gap-10 justify-center items-center xl:gap-32 xl:mt-10">
-                            <img src={shaLoonLogo} alt="SHA Loon Logo" className="w-1/6 h-full xl:w-1/3" />
+                        <div className="flex gap-10 justify-center items-center 2xl:gap-32 2xl:mt-10">
+                            <img src={shaLoonLogo} alt="SHA Loon Logo" className="w-1/6 h-full 2xl:w-1/3" />
 
-                            <div className="text-center xl:flex xl:flex-col xl:gap-10">
-                                <p className="text-3xl xl:text-8xl">{currentDateTime.time}</p>
-                                <p className="xl:text-7xl">{currentDateTime.date}</p>
+                            <div className="text-center 2xl:flex 2xl:flex-col 2xl:gap-10">
+                                <p className="text-3xl xl:text-4xl 2xl:text-8xl">{currentDateTime.time}</p>
+                                <p className="xl:text-2xl 2xl:text-7xl">{currentDateTime.date}</p>
                             </div>
                         </div>
                     </div>

@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\CashierQueueController;
 use App\Http\Controllers\QueueController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VideoController;
@@ -33,21 +32,25 @@ Route::middleware(['api-key', 'auth:sanctum'])->group(function () {
 }); */
 
 Route::middleware(['api-key'])->group(function () {
-    Route::get('/latest-tickets', [CashierQueueController::class, 'latestInProgressTicketCodes']);
+    Route::post('/generate-ticket', [QueueController::class, 'createQueueTicket']);
+    Route::get('/latest-tickets', [QueueController::class, 'latestInProgressTicketCodes']);
+    Route::get('/videos', [VideoController::class, 'index']);
 
-    Route::post('/generate-ticket', [QueueController::class, 'store']);
+    Route::middleware(['auth:sanctum'])->group(function () {
+        Route::get('/admin/queues', [QueueController::class, 'index']);
+        Route::put('/admin/queues/{queue}/skip', [QueueController::class, 'skipQueue']);
+        Route::put('/admin/queues', [QueueController::class, 'update']);
+        Route::post('/videos', [VideoController::class, 'store']);
+    });
+
     Route::post('/login', [AuthController::class, 'index']);
     Route::delete('/logout', [AuthController::class, 'destroy'])->middleware('auth:sanctum');
     Route::post('/users', [UserController::class, 'store'])
         ->middleware(['auth:sanctum', 'check-user-role:admin']);
 
     Route::prefix('/cashier')->group(function () {
-        Route::get('/queues', [CashierQueueController::class, 'index']);
-        Route::post('/queues', [CashierQueueController::class, 'store']);
-        Route::put('/queues/{queue}/skip', [CashierQueueController::class, 'skipQueue']);
-        Route::put('/queues', [CashierQueueController::class, 'update']);
+        Route::get('/queues', [QueueController::class, 'index']);
+        Route::put('/queues/{queue}/skip', [QueueController::class, 'skipQueue']);
+        Route::put('/queues', [QueueController::class, 'update']);
     });
-
-    Route::get('/videos', [VideoController::class, 'index']);
-    Route::post('/videos', [VideoController::class, 'store'])->middleware('auth:sanctum');
 });

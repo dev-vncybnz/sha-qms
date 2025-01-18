@@ -3,17 +3,23 @@ import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Sidebar from '../../components/Sidebar'
 import Swal from 'sweetalert2'
+import { useAuth } from '../../contexts/AuthContext'
 
 const Queue = () => {
 
+    const [registrarTicket, setRegistrarTicket] = useState(null);
+    const [page, setPage] = useState(1);
+    const [tab, setTab] = useState(1);
     const [response, setResponse] = useState({});
+    const [refresh, setRefresh] = useState(false);
+    const authContext = useAuth();
 
     useEffect(() => {
         const controller = new AbortController();
         const fetchData = async () => {
             const baseUrl = import.meta.env.VITE_API_URL;
             const apiKey = import.meta.env.VITE_API_KEY;
-            const url = `${baseUrl}/cashier/queues`;
+            const url = `${baseUrl}/api/latest-tickets`;
             const requestOptions = {
                 signal: controller.signal,
                 method: 'GET',
@@ -27,22 +33,59 @@ const Queue = () => {
             const response = await fetch(url, requestOptions);
             const responseJSON = await response.json();
 
+            const { registrar } = responseJSON;
+
+            setRegistrarTicket(registrar);
+        };
+
+        fetchData();
+
+        return () => {
+            setRefresh(false);
+            controller.abort();
+        }
+    }, [refresh]);
+
+    useEffect(() => {
+        setResponse({});
+
+        const controller = new AbortController();
+        const fetchData = async () => {
+            const baseUrl = import.meta.env.VITE_API_URL;
+            const apiKey = import.meta.env.VITE_API_KEY;
+            const token = authContext.token;
+            const url = `${baseUrl}/api/admin/queues?page=${page}&status=${tab}&person=registrar`;
+            const requestOptions = {
+                signal: controller.signal,
+                method: 'GET',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-API-KEY': apiKey,
+                    Authorization: `Bearer ${token}`,
+                },
+            };
+
+            const response = await fetch(url, requestOptions);
+            const responseJSON = await response.json();
+
             setResponse(responseJSON);
         };
 
         fetchData();
 
         return () => {
+            setRefresh(false);
             controller.abort();
         }
-    }, []);
+    }, [refresh, page]);
 
     const formatStatus = status => ['Pending', 'In Progress', 'Completed'][status];
 
     const formatCashier = person => {
         let formatted = person.replace('_', ' ');
         formatted = formatted.charAt(0).toUpperCase() + formatted.substring(1);
-        
+
         return formatted;
     };
 
@@ -77,9 +120,9 @@ const Queue = () => {
         .replace(/8/g, " eight ")
         .replace(/9/g, " nine ");
 
-    const speakMessage = (code, cashier) => {
+    const speakMessage = (code) => {
         const formattedCode = code.split('').join(' ');
-        const destination = cashier == 'cashier_1' ? 'Cashier 1' : 'Cashier 2';
+        const destination = "registrar"
         const message = `${formattedCode}, please proceed to ${destination}!`;
         const utterance = new SpeechSynthesisUtterance(formatMessage(message));
         utterance.lang = 'en-US';
@@ -110,45 +153,106 @@ const Queue = () => {
     }
 
     const onClickNext = async () => {
-        Swal.fire({
-            title: 'Select a Cashier',
+        const result = await Swal.fire({
+            text: 'Please select "Yes" to confirm',
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Cashier 1',
-            cancelButtonText: 'Cashier 2',
-        }).then((result) => {
-            if (result.isConfirmed) {
-                assignCashierQueueTicket('cashier_1');
-            } else if (result.dismiss === Swal.DismissReason.cancel) {
-                assignCashierQueueTicket('cashier_2');
+            confirmButtonText: 'Yes',
+            cancelButtonText: 'No',
+            reverseButtons: true,
+            customClass: {
+                confirmButton: "bg-red-500",
+                cancelButton: "bg-gray-500"
             }
         });
+
+        if (result.isConfirmed) {
+            updateQueueTicket();
+        }
     }
 
-    const onClickCall = (code, cashier) => {
-        speakMessage(code, cashier);
+    const onClickCall = code => speakMessage(code);
+
+    const updateQueueTicket = async () => {
+        try {
+            const baseUrl = import.meta.env.VITE_API_URL;
+            const apiKey = import.meta.env.VITE_API_KEY;
+            const token = authContext.token;
+            const url = `${baseUrl}/api/admin/queues`;
+            const requestOptions = {
+                method: 'PUT',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-API-KEY': apiKey,
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    person: "registrar"
+                })
+            };
+
+            const response = await fetch(url, requestOptions);
+            const responseJSON = await response.json();
+            const { ticket_code } = responseJSON;
+
+            setRefresh(true);
+            speakMessage(ticket_code);
+        } catch (error) {
+            console.log(`API Error: ${error}`);
+        }
     }
 
-    const assignCashierQueueTicket = async (cashier) => {
-        const baseUrl = import.meta.env.VITE_API_URL;
-        const apiKey = import.meta.env.VITE_API_KEY;
-        const url = `${baseUrl}/cashier/queues`;
-        const requestOptions = {
-            method: 'PUT',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-                'X-API-KEY': apiKey,
-            },
-            body: JSON.stringify({
-                'person': cashier
-            })
-        };
+    const onClickRefresh = () => {
+        setPage(1);
+        setRefresh(true);
+    };
 
-        const response = await fetch(url, requestOptions);
-        const responseJSON = await response.json();
+    const onClickPrevPagination = () => setPage(prev => --prev);
 
-        console.log(responseJSON);
+    const onClickNextPagination = () => setPage(prev => ++prev);
+
+    const onClickSkip = async () => {
+        const result = await Swal.fire({
+            text: 'Please select "Yes" to confirm',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes',
+            cancelButtonText: 'No',
+            reverseButtons: true,
+            customClass: {
+                confirmButton: 'bg-gray-300 text-black',
+                cancelButton: 'bg-red-500'
+            }
+        });
+
+        if (result.isConfirmed) {
+            const id = registrarTicket.id;
+            const baseUrl = import.meta.env.VITE_API_URL;
+            const apiKey = import.meta.env.VITE_API_KEY;
+            const token = authContext.token;
+            const url = `${baseUrl}/api/admin/queues/${id}/skip`;
+            const requestOptions = {
+                method: 'PUT',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-API-KEY': apiKey,
+                    Authorization: `Bearer ${token}`
+                },
+            };
+
+            const response = await fetch(url, requestOptions);
+            const responseJSON = await response.json();
+
+            setRefresh(true);
+        }
+    }
+
+    const onClickTab = (tab) => {
+        setTab(tab);
+
+        setRefresh(true);
     }
 
     return (
@@ -157,64 +261,74 @@ const Queue = () => {
                 <Sidebar className="w-1/5" />
 
                 {/* Content */}
-                <div className="w-full px-5 py-3">
-                    <div className="flex justify-between">
-                        <div className="w-1/4 text-left">
-                            <p className="text-4xl">CAS-0001</p>
-                            <p>Cashier 1</p>
-                            <div className="flex gap-5">
-                                <button onClick={() => onClickCall("CAS-001", "cashier_1")} className="text-white rounded-md bg-red-500 hover:bg-red-400 min-w-20 mt-3">Call</button>
-                                <button className="text-white rounded-md bg-teal-500 hover:bg-teal-400 min-w-20 mt-3">Skip</button>
-                            </div>
+                <div className="w-full min-h-full px-5 py-3">
+                    <div className="w-full flex flex-col items-center">
+                        <p className="text-4xl">{registrarTicket ? registrarTicket.ticket_code : "----"}</p>
+                        <div className="flex gap-5">
+                            {registrarTicket && (
+                                <>
+                                    <button onClick={() => onClickCall(registrarTicket.ticket_code)} className="text-white rounded-md bg-red-500 hover:bg-red-400 min-w-20 mt-3">Call</button>
+                                    <button className="text-white rounded-md bg-teal-500 hover:bg-teal-400 min-w-20 mt-3" onClick={onClickSkip}>Skip</button>
+                                </>
+                            )}
+
+                            <button className="text-white rounded-md bg-blue-500 hover:bg-blue-400 min-w-20 mt-3" onClick={onClickNext}>Next</button>
                         </div>
 
-                        <button className="text-white rounded-md py-2 bg-blue-500 hover:bg-blue-400 self-center min-w-36" onClick={onClickNext}>Next</button>
+                    </div>
 
-                        <div className="w-1/4 text-right">
-                            <p className="text-4xl">CAS-0002</p>
-                            <p>Cashier 2</p>
-                            <div className="flex gap-5 justify-end">
-                                <button className="text-white rounded-md bg-red-500 hover:bg-red-400 min-w-20 mt-3">Call</button>
-                                <button className="text-white rounded-md bg-teal-500 hover:bg-teal-400 min-w-20 mt-3">Skip</button>
-                            </div>
-                        </div>
+                    <div className="flex mt-10 gap-3">
+                        <button onClick={() => onClickTab(1)} className={`rounded-full py-2 px-3 ${tab == 1 ? 'bg-red-500 text-white hover:bg-red-400' : 'hover:text-white hover:bg-red-500'}`}>Waiting List</button>
+                        <button onClick={() => onClickTab(2)} className={`rounded-full py-2 px-3 ${tab == 2 ? 'bg-red-500 text-white hover:bg-red-400' : 'hover:text-white hover:bg-red-500'}`}>Completed</button>
                     </div>
 
                     {/* Queue Table */}
-                    <table className="mt-10 w-full">
-                        <thead className="bg-red-500 text-white">
+                    <table className="mt-3 w-full">
+                        <thead className="bg-gray-200">
                             <tr>
-                                <th className="p-1 text-left">Student ID</th>
-                                <th className="p-1 text-left">Ticket Code</th>
-                                <th className="p-1 text-left">Assigned Cashier</th>
-                                <th className="p-1 text-left">Status</th>
-                                <th className="p-1 text-left">Queue Date</th>
+                                <th className="p-1 py-2 pl-5 text-left font-normal">Ticket Code</th>
+                                <th className="p-1 py-2 text-left font-normal">Assigned Person</th>
+                                <th className="p-1 py-2 text-left font-normal">Status</th>
+                                <th className="p-1 py-2 text-left font-normal">Queue Date</th>
                             </tr>
                         </thead>
                         <tbody className="shadow-md">
                             {response.data && response.data.map(item => (
                                 <tr key={item.id}>
-                                    <td className="p-1">{item.student_id}</td>
-                                    <td className="p-1">{item.ticket_code}</td>
-                                    <td className="p-1">{formatCashier(item.assigned_person)}</td>
+                                    <td className="p-1 pl-5">{item.ticket_code}</td>
+                                    <td className="p-1">{item.assigned_person ? formatCashier(item.assigned_person) : "None"}</td>
                                     <td className="p-1">{formatStatus(item.status)}</td>
                                     <td className="p-1">{formatDateTime(item.created_at)}</td>
                                 </tr>
                             ))}
-                            {/* <tr>
-                                <td colSpan="5" className="text-center text-gray-300 py-5">No available data</td>
-                            </tr> */}
+                            {!response.data && (
+                                <tr>
+                                    <td colSpan="5" className="text-center text-gray-300 py-5">No available data</td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
 
                     {/* Pagination */}
-                    <div className="mt-3 flex justify-between items-center">
-                        <button className="hover:underline">Refresh</button>
-                        <div className="flex items-center gap-5">
-                            <p>Showing 1 ~ 5 of 100 items</p>
-                            <FontAwesomeIcon icon={faChevronLeft} className="text-gray-300 cursor-pointer" />
-                            <FontAwesomeIcon icon={faChevronRight} className="text-gray-300 cursor-pointer" />
-                        </div>
+                    <div className="my-3 flex justify-between items-center">
+                        <button className="hover:underline" onClick={onClickRefresh}>Refresh</button>
+
+                        {response && response.data && response.data.length > 0 && (
+                            <div className="flex items-center gap-5">
+                                <p>
+                                    Showing {(response.meta.current_page - 1) * response.meta.per_page + 1}
+                                    ~
+                                    {Math.min(response.meta.current_page * response.meta.per_page, response.meta.total)} of {response.meta.total} items
+                                </p>
+
+                                <FontAwesomeIcon icon={faChevronLeft}
+                                    onClick={response.links.prev ? onClickPrevPagination : null} className={`text-${response.links.prev ? 'black' : 'gray'}-300 cursor-pointer`} />
+
+                                <FontAwesomeIcon icon={faChevronRight}
+                                    onClick={response.links.next ? onClickNextPagination : null} className={`text-${response.links.next ? 'black' : 'gray'}-300 cursor-pointer`} />
+
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

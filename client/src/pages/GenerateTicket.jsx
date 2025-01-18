@@ -64,7 +64,6 @@ const GenerateTicket = () => {
                     },
                     body: JSON.stringify({
                         person,
-                        assigned_person: person === 'registrar' ? 'registrar' : null
                     })
                 };
 

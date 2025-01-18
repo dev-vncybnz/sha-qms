@@ -7,8 +7,6 @@ use App\Enums\RoleEnum;
 use App\Http\Resources\QueueResource;
 use App\Models\Queue;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class QueueController extends Controller
@@ -21,85 +19,80 @@ class QueueController extends Controller
                 'integer',
                 'min:1'
             ],
-            'per_page' => [
-                'required',
+            'status' => [
+                'nullable',
                 'integer',
-                'min:1'
+                'min:1',
+                'max:2',
+            ],
+            'person' => [
+                'required',
+                'string',
+                Rule::in([RoleEnum::CASHIER, RoleEnum::REGISTRAR])
             ]
         ]);
 
-        $page = $validated['page'];
-        $perPage = $validated['per_page'];
+        $status = isset($request->status) ? $validated['status'] : null;
+        $person = $validated['person'];
 
-        $query = Queue::join('users', 'users.id', 'queues.assigned_person')
-            ->select(
-                'queues.id as queue_id',
-                'queues.code',
-                'queues.assigned_person',
-                'queues.status',
-                'queues.created_at',
-                'queues.updated_at',
-                'users.photo',
-                'users.first_name',
-                'users.last_name',
-                'users.gender',
-                'users.address',
-                'users.email',
-                'users.phone',
-                'users.role',
-                'users.email_verified_at',
-                'users.password',
-                'users.remember_token'
-            )
-            ->where('queues.assigned_person', Auth::user()->id)
-            ->whereDate('queues.created_at', now());
+        $ticketCodeLike = $person === RoleEnum::REGISTRAR ? "REG" : "CAS";
+        $query = Queue::where('ticket_code', 'like', "%$ticketCodeLike%")
+            ->orderBy('created_at', 'asc')
+            ->whereDate('created_at', now());
 
-        if (isset($request->role)) {
-            $query->where('users.role', RoleEnum::fromValue(intval($request->role))->value);
+        if ($status == QueueStatusEnum::COMPLETED) {
+            $query->where('status', QueueStatusEnum::COMPLETED);
+        } else {
+            $query->whereNot('status', QueueStatusEnum::COMPLETED);
         }
 
-        if (isset($request->status) && $request->status == 0) {
-            $query->whereNot('queues.status', QueueStatusEnum::COMPLETED);
-        }
-
-        if (isset($request->status) && $request->status == 2) {
-            $query->where('queues.status', QueueStatusEnum::COMPLETED);
-        }
-
-        if (isset($request->order_by) && $request->order_by) {
-            $query->orderBy('queues.created_at', $request->order_by);
-        }
-
-        $data = $query->paginate($perPage);
+        $data = $query->paginate();
 
         return QueueResource::collection($data);
     }
 
-    public function getLatestQueueCodes()
+    public function latestInProgressTicketCodes(Request $request)
     {
-        $cashierWIPData = Queue::join('users', 'users.id', 'queues.assigned_person')
-            ->where('users.role', RoleEnum::CASHIER)
-            ->where('queues.status', QueueStatusEnum::IN_PROGRESS)
-            ->whereDate('queues.created_at', now())
-            ->orderBy('queues.updated_at', 'desc')
+        $onlyTicketCodes = $request->only_ticket_codes;
+
+        // Cashier 1
+        $cashier1LatestInProgressData = Queue::where('assigned_person', RoleEnum::CASHIER_1)
+            ->where('status', QueueStatusEnum::IN_PROGRESS)
+            ->orderBy('created_at', 'asc')
             ->first();
 
-        $registrarWIPData = Queue::join('users', 'users.id', 'queues.assigned_person')
-            ->where('users.role', RoleEnum::REGISTRAR)
-            ->where('queues.status', QueueStatusEnum::IN_PROGRESS)
-            ->whereDate('queues.created_at', now())
-            ->orderBy('queues.updated_at', 'desc')
+        // Cashier 2
+        $cashier2LatestInProgressData = Queue::where('assigned_person', RoleEnum::CASHIER_2)
+            ->where('status', QueueStatusEnum::IN_PROGRESS)
+            ->orderBy('created_at', 'asc')
             ->first();
 
-        $data = [
-            'cashierWIPCode' => $cashierWIPData?->code,
-            'registrarWIPCode' => $registrarWIPData?->code,
-        ];
+        // Registrar
+        $registrarLatestInProgressData = Queue::where('assigned_person', RoleEnum::REGISTRAR)
+            ->where('status', QueueStatusEnum::IN_PROGRESS)
+            ->orderBy('created_at', 'asc')
+            ->first();
+
+        $data = null;
+
+        if ($onlyTicketCodes) {
+            $data = [
+                'cashier_1' => $cashier1LatestInProgressData?->ticket_code,
+                'cashier_2' => $cashier2LatestInProgressData?->ticket_code,
+                'registrar' => $registrarLatestInProgressData?->ticket_code,
+            ];
+        } else {
+            $data = [
+                'cashier_1' => $cashier1LatestInProgressData,
+                'cashier_2' => $cashier2LatestInProgressData,
+                'registrar' => $registrarLatestInProgressData,
+            ];
+        }
 
         return response()->json($data, 200);
     }
 
-    public function store(Request $request)
+    public function createQueueTicket(Request $request)
     {
         $data = $request->validate([
             'person' => [
@@ -115,6 +108,7 @@ class QueueController extends Controller
         $personLike = $person == 'cashier' ? 'CAS' : 'REG';
         $latestTicketData = Queue::where('ticket_code', 'like', "%$personLike%")
             ->whereDate('created_at', now())
+            ->lockForUpdate()
             ->latest()
             ->first();
 
@@ -128,53 +122,81 @@ class QueueController extends Controller
         }
 
         // Create Ticket Code Prefix
-        $code = "CAS-";
-
-        if ($person == "registrar") {
-            $code = "REG-";
-        }
+        $code = str_contains($person, "cas") ? "CAS-" : "REG-";
 
         // Add 000 to the left of queue number that is less than 3 digits
         $code = $code . str_pad(strval($latestTicketNumber), 4, '0', STR_PAD_LEFT);
+        $assigned_person = str_contains($person, "reg") ? "registrar" : null;
 
         $data = [
             'ticket_code' => $code,
             'status' => QueueStatusEnum::PENDING,
-            'assigned_person' => $request->assigned_person
+            'assigned_person' => $assigned_person
         ];
+
+        // Prevent duplication due to consecutive quick requests
+        $checkTicketExists = Queue::where('ticket_code', $code)
+            ->whereDate('created_at', now())
+            ->first();
+
+        if ($checkTicketExists) {
+            $checkTicketExists->created_at = now();
+            $checkTicketExists->save();
+            return response()->json($checkTicketExists, 201);
+        }
 
         $queue = Queue::create($data);
 
         return response()->json($queue, 201);
     }
 
-    public function update(Request $request, Queue $queue)
+    public function skipQueue(Queue $queue)
     {
-        DB::beginTransaction();
+        $code = $queue->ticket_code;
 
-        try {
-            $inProgressQueues = Queue::where('assigned_person', Auth::user()->id)
-                ->whereNot('id', $queue->id)
-                ->where('status', QueueStatusEnum::IN_PROGRESS)
-                ->whereDate('created_at', now())
-                ->get();
+        $queue->created_at = now();
+        $queue->status = QueueStatusEnum::PENDING;
 
-            foreach ($inProgressQueues as $item) {
-                $item->status = QueueStatusEnum::PENDING;
-                $item->save();
-            }
-
-            $status = $request->post('status');
-
-            $queue->status = intval($status);
-            $queue->save();
-
-            DB::commit();
-
-            return response()->json(true, 200);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['error' => 'Something went wrong, please try again.'], 500);
+        if (str_contains($code, "CAS")) {
+            $queue->assigned_person = null;
         }
+
+        $queue->save();
+
+        return response()->json(true, 200);
+    }
+
+    public function update(Request $request)
+    {
+        $person = $request->post('person');
+
+        // Set the status of person's in progress queue data to Completed
+        $queue = Queue::where('assigned_person', $person)
+            ->where('status', QueueStatusEnum::IN_PROGRESS)
+            ->orderBy('created_at', 'asc')
+            ->first();
+
+        if ($queue) {
+            $queue->status = QueueStatusEnum::COMPLETED;
+            $queue->save();
+        }
+
+        // Get new queue data and assign to the person
+        $personLike = $person == 'cashier' ? 'CAS' : 'REG';
+        $newQueueData = Queue::where('ticket_code', 'like', "%$personLike%")
+            ->where('status', QueueStatusEnum::PENDING)
+            ->whereDate('created_at', now())
+            ->orderBy('created_at', 'asc')
+            ->first();
+
+        if ($newQueueData) {
+            $newQueueData->assigned_person = $person;
+            $newQueueData->status = QueueStatusEnum::IN_PROGRESS;
+            $newQueueData->save();
+
+            return response()->json($newQueueData, 200);
+        }
+
+        return response()->json("Queue is empty", 200);
     }
 }
