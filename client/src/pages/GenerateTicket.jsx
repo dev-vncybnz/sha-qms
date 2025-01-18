@@ -41,8 +41,8 @@ const GenerateTicket = () => {
             confirmButtonText: "Yes",
             reverseButtons: true,
             customClass: {
-                confirmButton: "w-32",
-                cancelButton: "w-32",
+                confirmButton: "w-32 bg-red-500",
+                cancelButton: "w-32 bg-gray-400",
             },
         });
 

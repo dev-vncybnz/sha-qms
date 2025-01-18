@@ -3,6 +3,21 @@ import React, { forwardRef } from 'react';
 const Ticket = (props, ref) => {
     const { code, destination } = props;
 
+    const formatDate = (date) => {
+        const newDate = date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+        });
+
+        const time = date.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+        });
+
+        return `${newDate + ' ' + time}`;
+    }
+
     return (
         <div ref={ref} className="w-fit flex flex-col items-center text-center gap-10 p-10 border-2 border-black mx-auto mt-5">
             <p>Please proceed to {destination} when your number is called</p>
@@ -36,6 +51,9 @@ const Ticket = (props, ref) => {
                     )
                 }
             </div>
+
+            <p className="text-sm">Issued on {formatDate(new Date())}</p>
+
             <p>Thank you for using our system !!!</p>
         </div>
     );
