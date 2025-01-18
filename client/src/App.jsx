@@ -7,6 +7,7 @@ import SecureRoutes from './SecureRoutes';
 import NotFound from './pages/NotFound';
 import CashierQueue from './pages/cashier/Queue';
 import RegistrarQueue from './pages/registrar/Queue';
+import RegistrarReports from './pages/registrar/Reports';
 import ManageVideos from './pages/ManageVideos';
 import Template from './pages/Template';
 import Forbidden from './pages/Forbidden';
@@ -32,6 +33,7 @@ function App() {
               
               <Route path="/registrar">
                 <Route path="queue" element={<RegistrarQueue />} />
+                <Route path="reports" element={<RegistrarReports />} />
               </Route>
             </Route>
 

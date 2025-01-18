@@ -37,27 +37,29 @@ const Sidebar = (props) => {
         navigate('/login');
     }
 
-    const onClickLogout = () => {
-        Swal.fire({
+    const onClickLogout = async () => {
+        const result = await Swal.fire({
             text: 'Are you sure you want to logout?',
             icon: 'question',
             showCancelButton: true,
             confirmButtonText: 'Yes',
             cancelButtonText: 'No',
-            reverseButtons: true
-        }).then((result) => {
-            if (result.isConfirmed) {
-                logoutUser();
-            } else {
-
+            reverseButtons: true,
+            customClass: {
+                confirmButton: "bg-red-500",
+                cancelButton: "bg-gray-400"
             }
         });
+
+        if (result.isConfirmed) {
+            logoutUser();
+        }
     }
 
     const onClickSidebarItem = (path) => {
         const role = authContext.user.role;
 
-        if (role === 'cashier') {
+        if (role === 'cashier' || role === 'registrar') {
             navigate(`/${role}/${path}`);
         }
     }

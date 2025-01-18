@@ -11,11 +11,15 @@ const SecureRoutes = () => {
         return <div>Loading...</div>;
     }
 
-    if(!location.pathname.includes(`${user.role}`)) {
+    if (!isAuthenticated) {
+        return <Navigate to="/login" />;
+    }
+
+    if (!location.pathname.includes(`${user.role}`)) {
         return <Navigate to="/forbidden" />
     }
 
-    return !loading && isAuthenticated ? <Outlet /> : <Navigate to="/login" />
+    return <Outlet />;
 }
 
 export default SecureRoutes
