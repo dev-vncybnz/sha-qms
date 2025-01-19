@@ -14,6 +14,7 @@ const Queue = () => {
     const [refresh, setRefresh] = useState(false);
     const authContext = useAuth();
 
+    // Get in progress tickets for the day
     useEffect(() => {
         const controller = new AbortController();
         const fetchData = async () => {
@@ -30,12 +31,16 @@ const Queue = () => {
                 },
             };
 
-            const response = await fetch(url, requestOptions);
-            const responseJSON = await response.json();
+            try {
+                const response = await fetch(url, requestOptions);
+                const responseJSON = await response.json();
 
-            const { registrar } = responseJSON;
+                const { registrar } = responseJSON;
 
-            setRegistrarTicket(registrar);
+                setRegistrarTicket(registrar);
+            } catch (error) {
+                console.log(`API Error: ${error}`);
+            }
         };
 
         fetchData();
@@ -46,6 +51,7 @@ const Queue = () => {
         }
     }, [refresh]);
 
+    // Get registrar tickets for the day
     useEffect(() => {
         setResponse({});
 
@@ -66,10 +72,14 @@ const Queue = () => {
                 },
             };
 
-            const response = await fetch(url, requestOptions);
-            const responseJSON = await response.json();
+            try {
+                const response = await fetch(url, requestOptions);
+                const responseJSON = await response.json();
 
-            setResponse(responseJSON);
+                setResponse(responseJSON);
+            } catch (error) {
+                console.log(`API Error: ${error}`);
+            }
         };
 
         fetchData();
@@ -82,7 +92,7 @@ const Queue = () => {
 
     const formatStatus = status => ['Pending', 'In Progress', 'Completed'][status];
 
-    const formatCashier = person => {
+    const formatText = person => {
         let formatted = person.replace('_', ' ');
         formatted = formatted.charAt(0).toUpperCase() + formatted.substring(1);
 
@@ -242,16 +252,19 @@ const Queue = () => {
                 },
             };
 
-            const response = await fetch(url, requestOptions);
-            const responseJSON = await response.json();
+            try {
+                const response = await fetch(url, requestOptions);
+                const responseJSON = await response.json();
 
-            setRefresh(true);
+                setRefresh(true);
+            } catch (error) {
+                console.log(`API Error: ${error}`);
+            }
         }
     }
 
     const onClickTab = (tab) => {
         setTab(tab);
-
         setRefresh(true);
     }
 
@@ -272,7 +285,9 @@ const Queue = () => {
                                 </>
                             )}
 
-                            <button className="text-white rounded-md bg-blue-500 hover:bg-blue-400 min-w-20 mt-3" onClick={onClickNext}>Next</button>
+                            {response && response.data && response.data.length > 0 && (
+                                <button className="text-white rounded-md bg-blue-500 hover:bg-blue-400 min-w-20 mt-3" onClick={onClickNext}>Next</button>
+                            )}
                         </div>
 
                     </div>
@@ -296,7 +311,7 @@ const Queue = () => {
                             {response.data && response.data.map(item => (
                                 <tr key={item.id}>
                                     <td className="p-1 pl-5">{item.ticket_code}</td>
-                                    <td className="p-1">{item.assigned_person ? formatCashier(item.assigned_person) : "None"}</td>
+                                    <td className="p-1">{item.assigned_person ? formatText(item.assigned_person) : "None"}</td>
                                     <td className="p-1">{formatStatus(item.status)}</td>
                                     <td className="p-1">{formatDateTime(item.created_at)}</td>
                                 </tr>
