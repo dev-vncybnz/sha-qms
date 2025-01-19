@@ -37,6 +37,8 @@ Route::middleware(['api-key'])->group(function () {
     Route::get('/videos', [VideoController::class, 'index']);
 
     Route::middleware(['auth:sanctum'])->group(function () {
+        Route::get('/admin/ticket-summary', [QueueController::class, 'getTicketSummary']);
+        Route::get('/admin/generate-report', [QueueController::class, 'generateReport']);
         Route::get('/admin/queues', [QueueController::class, 'index']);
         Route::put('/admin/queues/{queue}/skip', [QueueController::class, 'skipQueue']);
         Route::put('/admin/queues', [QueueController::class, 'update']);

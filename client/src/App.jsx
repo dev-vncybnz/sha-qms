@@ -12,6 +12,8 @@ import ManageVideos from './pages/ManageVideos';
 import Template from './pages/Template';
 import Forbidden from './pages/Forbidden';
 import CashierReports from './pages/cashier/Reports';
+import RegistrarDashboard from './pages/registrar/Dashboard';
+import CashierDashboard from './pages/registrar/Dashboard';
 
 function App() {
   return (
@@ -26,12 +28,14 @@ function App() {
 
             <Route element={<SecureRoutes />}>
               <Route path="/cashier">
+                <Route path="" element={<CashierDashboard />} />
                 <Route path="queue" element={<CashierQueue />} />
                 <Route path="reports" element={<CashierReports />} />
                 <Route path="videos" element={<ManageVideos />} />
               </Route>
-              
+
               <Route path="/registrar">
+                <Route path="" element={<RegistrarDashboard />} />
                 <Route path="queue" element={<RegistrarQueue />} />
                 <Route path="reports" element={<RegistrarReports />} />
               </Route>

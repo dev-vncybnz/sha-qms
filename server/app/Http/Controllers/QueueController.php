@@ -7,6 +7,7 @@ use App\Enums\RoleEnum;
 use App\Http\Resources\QueueResource;
 use App\Models\Queue;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
 class QueueController extends Controller
@@ -49,6 +50,47 @@ class QueueController extends Controller
         $data = $query->paginate();
 
         return QueueResource::collection($data);
+    }
+
+    public function getTicketSummary()
+    {
+        $role = Auth::user()->role;
+
+        // Get total number of unprocessed tickets
+        $ticketLike = $role === 'cashier' ? 'CAS' : 'REG';
+
+        $incompleteTotal = Queue::where('ticket_code', 'like', "%$ticketLike%")
+            ->whereNot('status', QueueStatusEnum::COMPLETED)
+            ->whereDate('created_at', now())
+            ->orderBy('created_at', 'asc')
+            ->count();
+
+        $completedTotal = Queue::where('ticket_code', 'like', "%$ticketLike%")
+            ->where('status', QueueStatusEnum::COMPLETED)
+            ->whereDate('created_at', now())
+            ->orderBy('created_at', 'asc')
+            ->count();
+
+        $data = [
+            'incomplete' => $incompleteTotal,
+            'completed' => $completedTotal,
+        ];
+
+        return response()->json($data, 200);
+    }
+
+    public function generateReport()
+    {
+        $role = Auth::user()->role;
+
+        $ticketLike = $role === 'cashier' ? 'CAS' : 'REG';
+        $data = Queue::where('ticket_code', 'like', "%$ticketLike%")
+            ->where('status', QueueStatusEnum::COMPLETED)
+            ->whereDate('created_at', now())
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        return response()->json($data, 200);
     }
 
     public function latestInProgressTicketCodes(Request $request)

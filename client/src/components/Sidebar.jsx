@@ -9,6 +9,7 @@ const Sidebar = (props) => {
     const authContext = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
+    const role = authContext.user.role;
 
     const logoutUser = async () => {
         // Delete tokens in the database
@@ -57,7 +58,11 @@ const Sidebar = (props) => {
     }
 
     const onClickSidebarItem = (path) => {
-        const role = authContext.user.role;
+        if (path == "") {
+            navigate(`/${role}`);
+
+            return;
+        }
 
         if (role === 'cashier' || role === 'registrar') {
             navigate(`/${role}/${path}`);
@@ -70,6 +75,7 @@ const Sidebar = (props) => {
             <div className={`${props.className} shadow-xl flex flex-col gap-3 p-5`}>
                 <img src={shaLoonLogo} alt="SHA Loon Logo" />
 
+                <button onClick={() => onClickSidebarItem("")} className={`rounded-md py-2 ${location.pathname === `/${role}` ? 'bg-red-500 text-white hover:bg-red-400 hover:text-white' : 'hover:text-white hover:bg-red-500'}`}>Dashboard</button>
                 <button onClick={() => onClickSidebarItem('queue')} className={`rounded-md py-2 ${location.pathname.includes('queue') ? 'bg-red-500 text-white hover:bg-red-400 hover:text-white' : 'hover:text-white hover:bg-red-500'}`}>Queue</button>
                 <button onClick={() => onClickSidebarItem('reports')} className={`rounded-md py-2 ${location.pathname.includes('reports') ? 'bg-red-500 text-white hover:bg-red-400 hover:text-white' : 'hover:text-white hover:bg-red-500'}`}>Reports</button>
                 {authContext.user.role == "cashier" && (
