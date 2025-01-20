@@ -14,7 +14,7 @@ const Queue = () => {
     const [page, setPage] = useState(1);
     const [tab, setTab] = useState(1);
     const [response, setResponse] = useState({});
-    const [incompleteData, setIncompleteData] = useState([]);
+    const [incompleteData, setIncompleteData] = useState({});
     const [refresh, setRefresh] = useState(false);
     const authContext = useAuth();
 

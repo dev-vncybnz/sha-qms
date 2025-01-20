@@ -17,20 +17,6 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-/* Route::middleware('api-key')->group(function () {
-    Route::post('/login', [AuthController::class, 'index']);
-    Route::get('/queues', [QueueController::class, 'index']);
-    Route::post('/queues', [QueueController::class, 'store']);
-    Route::get('/latest-queue-codes', [QueueController::class, 'getLatestQueueCodes']);
-});
-
-Route::middleware(['api-key', 'auth:sanctum'])->group(function () {
-    Route::post('/logout', [AuthController::class, 'logout']);
-    Route::post('/users', [UserController::class, 'store']);
-    Route::get('/queues', [QueueController::class, 'index']);
-    Route::put('/queues/{queue}', [QueueController::class, 'update']);
-}); */
-
 Route::middleware(['api-key'])->group(function () {
     Route::post('/generate-ticket', [QueueController::class, 'createQueueTicket']);
     Route::get('/latest-tickets', [QueueController::class, 'latestInProgressTicketCodes']);
@@ -43,16 +29,10 @@ Route::middleware(['api-key'])->group(function () {
         Route::put('/admin/queues/{queue}/skip', [QueueController::class, 'skipQueue']);
         Route::put('/admin/queues', [QueueController::class, 'update']);
         Route::post('/videos', [VideoController::class, 'store']);
+        Route::delete('/logout', [AuthController::class, 'destroy']);
+        Route::post('/users', [UserController::class, 'store'])
+            ->middleware(['check-user-role:admin']);
     });
 
     Route::post('/login', [AuthController::class, 'index']);
-    Route::delete('/logout', [AuthController::class, 'destroy'])->middleware('auth:sanctum');
-    Route::post('/users', [UserController::class, 'store'])
-        ->middleware(['auth:sanctum', 'check-user-role:admin']);
-
-    Route::prefix('/cashier')->group(function () {
-        Route::get('/queues', [QueueController::class, 'index']);
-        Route::put('/queues/{queue}/skip', [QueueController::class, 'skipQueue']);
-        Route::put('/queues', [QueueController::class, 'update']);
-    });
 });

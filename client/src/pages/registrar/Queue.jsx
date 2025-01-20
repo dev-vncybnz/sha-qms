@@ -1,23 +1,28 @@
 import React, { useEffect, useState } from 'react'
-import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
+import { faChevronLeft, faChevronRight, faL } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Sidebar from '../../components/Sidebar'
 import Swal from 'sweetalert2'
 import { useAuth } from '../../contexts/AuthContext'
+import Loader from '../../components/Loader'
 
 const Queue = () => {
 
+    const [loading, setLoading] = useState(false);
     const [registrarTicket, setRegistrarTicket] = useState(null);
     const [page, setPage] = useState(1);
     const [tab, setTab] = useState(1);
     const [response, setResponse] = useState({});
+    const [incompleteData, setIncompleteData] = useState({});
     const [refresh, setRefresh] = useState(false);
     const authContext = useAuth();
 
-    // Get in progress tickets for the day
+    // Get tickets
     useEffect(() => {
+        setLoading(true);
         const controller = new AbortController();
-        const fetchData = async () => {
+
+        const fetchCurrentInProgressTicket = async () => {
             const baseUrl = import.meta.env.VITE_API_URL;
             const apiKey = import.meta.env.VITE_API_KEY;
             const url = `${baseUrl}/api/latest-tickets`;
@@ -34,7 +39,6 @@ const Queue = () => {
             try {
                 const response = await fetch(url, requestOptions);
                 const responseJSON = await response.json();
-
                 const { registrar } = responseJSON;
 
                 setRegistrarTicket(registrar);
@@ -43,20 +47,32 @@ const Queue = () => {
             }
         };
 
-        fetchData();
+        const fetchIncompleteTickets = async () => {
+            const baseUrl = import.meta.env.VITE_API_URL;
+            const apiKey = import.meta.env.VITE_API_KEY;
+            const token = authContext.token;
+            const url = `${baseUrl}/api/admin/queues?page=${page}&person=registrar`;
+            const requestOptions = {
+                signal: controller.signal,
+                method: 'GET',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-API-KEY': apiKey,
+                    Authorization: `Bearer ${token}`,
+                },
+            };
 
-        return () => {
-            setRefresh(false);
-            controller.abort();
-        }
-    }, [refresh]);
+            try {
+                const response = await fetch(url, requestOptions);
+                const responseJSON = await response.json();
+                setIncompleteData(responseJSON);
+            } catch (error) {
+                console.log(`API Error: ${error.message}`);
+            }
+        };
 
-    // Get registrar tickets for the day
-    useEffect(() => {
-        setResponse({});
-
-        const controller = new AbortController();
-        const fetchData = async () => {
+        const fetchAllTickets = async () => {
             const baseUrl = import.meta.env.VITE_API_URL;
             const apiKey = import.meta.env.VITE_API_KEY;
             const token = authContext.token;
@@ -75,19 +91,19 @@ const Queue = () => {
             try {
                 const response = await fetch(url, requestOptions);
                 const responseJSON = await response.json();
-
                 setResponse(responseJSON);
             } catch (error) {
-                console.log(`API Error: ${error}`);
+                console.log(`API Error: ${error.message}`);
+            } finally {
+                setTimeout(() => setLoading(false), 500);
             }
         };
 
-        fetchData();
+        fetchCurrentInProgressTicket();
+        fetchIncompleteTickets();
+        fetchAllTickets();
 
-        return () => {
-            setRefresh(false);
-            controller.abort();
-        }
+        return () => controller.abort();
     }, [refresh, page]);
 
     const formatStatus = status => ['Pending', 'In Progress', 'Completed'][status];
@@ -136,7 +152,7 @@ const Queue = () => {
         const message = `${formattedCode}, please proceed to ${destination}!`;
         const utterance = new SpeechSynthesisUtterance(formatMessage(message));
         utterance.lang = 'en-US';
-        utterance.rate = 1.2;
+        utterance.rate = 1.1;
 
         const setFemaleVoice = () => {
             const voices = speechSynthesis.getVoices();
@@ -162,6 +178,8 @@ const Queue = () => {
         }
     }
 
+    const onClickCall = code => speakMessage(code);
+
     const onClickNext = async () => {
         const result = await Swal.fire({
             text: 'Please select "Yes" to confirm',
@@ -172,7 +190,7 @@ const Queue = () => {
             reverseButtons: true,
             customClass: {
                 confirmButton: "bg-red-500",
-                cancelButton: "bg-gray-500"
+                cancelButton: "bg-gray-400 text-white"
             }
         });
 
@@ -181,41 +199,41 @@ const Queue = () => {
         }
     }
 
-    const onClickCall = code => speakMessage(code);
-
     const updateQueueTicket = async () => {
-        try {
-            const baseUrl = import.meta.env.VITE_API_URL;
-            const apiKey = import.meta.env.VITE_API_KEY;
-            const token = authContext.token;
-            const url = `${baseUrl}/api/admin/queues`;
-            const requestOptions = {
-                method: 'PUT',
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-API-KEY': apiKey,
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    person: "registrar"
-                })
-            };
+        setLoading(true);
 
+        const baseUrl = import.meta.env.VITE_API_URL;
+        const apiKey = import.meta.env.VITE_API_KEY;
+        const token = authContext.token;
+        const url = `${baseUrl}/api/admin/queues`;
+        const requestOptions = {
+            method: 'PUT',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-API-KEY': apiKey,
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                person: "registrar"
+            })
+        };
+
+        try {
             const response = await fetch(url, requestOptions);
             const responseJSON = await response.json();
             const { ticket_code } = responseJSON;
 
-            setRefresh(true);
-            speakMessage(ticket_code);
+            setRefresh(prev => !prev);
+            setTimeout(() => speakMessage(ticket_code), 500);
         } catch (error) {
             console.log(`API Error: ${error}`);
-        }
+        } 
     }
 
     const onClickRefresh = () => {
         setPage(1);
-        setRefresh(true);
+        setRefresh(prev => !prev);
     };
 
     const onClickPrevPagination = () => setPage(prev => --prev);
@@ -231,8 +249,8 @@ const Queue = () => {
             cancelButtonText: 'No',
             reverseButtons: true,
             customClass: {
-                confirmButton: 'bg-gray-300 text-black',
-                cancelButton: 'bg-red-500'
+                confirmButton: 'bg-red-500',
+                cancelButton: 'bg-gray-400 text-white'
             }
         });
 
@@ -255,8 +273,7 @@ const Queue = () => {
             try {
                 const response = await fetch(url, requestOptions);
                 const responseJSON = await response.json();
-
-                setRefresh(true);
+                setRefresh(prev => !prev);
             } catch (error) {
                 console.log(`API Error: ${error}`);
             }
@@ -265,11 +282,13 @@ const Queue = () => {
 
     const onClickTab = (tab) => {
         setTab(tab);
-        setRefresh(true);
+        setRefresh(prev => !prev);
     }
 
     return (
         <>
+            <Loader loading={loading} />
+
             <div className="flex h-screen">
                 <Sidebar className="w-1/5" />
 
@@ -279,13 +298,15 @@ const Queue = () => {
                         <p className="text-4xl">{registrarTicket ? registrarTicket.ticket_code : "----"}</p>
                         <div className="flex gap-5">
                             {registrarTicket && (
-                                <>
-                                    <button onClick={() => onClickCall(registrarTicket.ticket_code)} className="text-white rounded-md bg-red-500 hover:bg-red-400 min-w-20 mt-3">Call</button>
-                                    <button className="text-white rounded-md bg-teal-500 hover:bg-teal-400 min-w-20 mt-3" onClick={onClickSkip}>Skip</button>
-                                </>
+                                <button onClick={() => onClickCall(registrarTicket.ticket_code)} className="text-white rounded-md bg-red-500 hover:bg-red-400 min-w-20 mt-3">Call</button>
                             )}
 
-                            {response && response.data && response.data.length > 0 && (
+                            {incompleteData && incompleteData.data && incompleteData.data.length > 0 && registrarTicket && (
+                                <button className="text-white rounded-md bg-teal-500 hover:bg-teal-400 min-w-20 mt-3" onClick={onClickSkip}>Skip</button>
+                            )
+                            }
+
+                            {incompleteData && incompleteData.data && incompleteData.data.length > 0 && (
                                 <button className="text-white rounded-md bg-blue-500 hover:bg-blue-400 min-w-20 mt-3" onClick={onClickNext}>Next</button>
                             )}
                         </div>
@@ -308,7 +329,7 @@ const Queue = () => {
                             </tr>
                         </thead>
                         <tbody className="shadow-md">
-                            {response.data && response.data.map(item => (
+                            {response && response.data && response.data.length > 0 && response.data.map(item => (
                                 <tr key={item.id}>
                                     <td className="p-1 pl-5">{item.ticket_code}</td>
                                     <td className="p-1">{item.assigned_person ? formatText(item.assigned_person) : "None"}</td>
@@ -316,7 +337,8 @@ const Queue = () => {
                                     <td className="p-1">{formatDateTime(item.created_at)}</td>
                                 </tr>
                             ))}
-                            {response.data && response.data.length == 0 && (
+
+                            {response && response.data && response.data.length === 0 && (
                                 <tr>
                                     <td colSpan="5" className="text-center text-gray-300 py-5">No available data</td>
                                 </tr>
