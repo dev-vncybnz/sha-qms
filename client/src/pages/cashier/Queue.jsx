@@ -18,10 +18,13 @@ const Queue = () => {
     const [refresh, setRefresh] = useState(false);
     const authContext = useAuth();
 
-    // Get latest cashier tickets
+    // Get tickets
     useEffect(() => {
+        setLoading(true);
+
         const controller = new AbortController();
-        const fetchData = async () => {
+
+        const fetchCurrentInProgressTickets = async () => {
             const baseUrl = import.meta.env.VITE_API_URL;
             const apiKey = import.meta.env.VITE_API_KEY;
             const url = `${baseUrl}/api/latest-tickets`;
@@ -35,25 +38,18 @@ const Queue = () => {
                 },
             };
 
-            const response = await fetch(url, requestOptions);
-            const responseJSON = await response.json();
+            try {
+                const response = await fetch(url, requestOptions);
+                const responseJSON = await response.json();
 
-            const { cashier_1, cashier_2 } = responseJSON;
+                const { cashier_1, cashier_2 } = responseJSON;
 
-            setCashier1Ticket(cashier_1);
-            setCashier2Ticket(cashier_2);
+                setCashier1Ticket(cashier_1);
+                setCashier2Ticket(cashier_2);
+            } catch (error) {
+                console.log(`API Error: ${error}`);
+            }
         };
-
-        fetchData();
-
-        return () => controller.abort();
-    }, [refresh]);
-
-    // Get tickets
-    useEffect(() => {
-        setLoading(true);
-
-        const controller = new AbortController();
 
         const fetchIncompleteTickets = async () => {
             const baseUrl = import.meta.env.VITE_API_URL;
@@ -109,6 +105,7 @@ const Queue = () => {
             }
         };
 
+        fetchCurrentInProgressTickets();
         fetchIncompleteTickets();
         fetchAllTickets();
 
@@ -161,7 +158,7 @@ const Queue = () => {
         const message = `${formattedCode}, please proceed to ${destination}!`;
         const utterance = new SpeechSynthesisUtterance(formatMessage(message));
         utterance.lang = 'en-US';
-        utterance.rate = 1.2;
+        utterance.rate = 1.1;
 
         const setFemaleVoice = () => {
             const voices = speechSynthesis.getVoices();
@@ -265,22 +262,30 @@ const Queue = () => {
         });
 
         if (result.isConfirmed) {
+            setRefresh(true);
+
             const id = cashier == 'cashier_1' ? cashier1Ticket.id : cashier2Ticket.id;
             const baseUrl = import.meta.env.VITE_API_URL;
             const apiKey = import.meta.env.VITE_API_KEY;
-            const url = `${baseUrl}/api/cashier/queues/${id}/skip`;
+            const token = authContext.token;
+            const url = `${baseUrl}/api/admin/queues/${id}/skip`;
             const requestOptions = {
                 method: 'PUT',
                 headers: {
                     Accept: 'application/json',
                     'Content-Type': 'application/json',
                     'X-API-KEY': apiKey,
+                    Authorization: `Bearer ${token}`
                 },
             };
 
-            const response = await fetch(url, requestOptions);
-            const responseJSON = await response.json();
-            setRefresh(prev => !prev);
+            try {
+                const response = await fetch(url, requestOptions);
+                const responseJSON = await response.json();
+                setRefresh(prev => !prev);
+            } catch (error) {
+                console.log(`API Error: ${error}`);
+            }
         }
     }
 
