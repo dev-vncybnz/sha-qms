@@ -4,14 +4,17 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Sidebar from '../../components/Sidebar'
 import Swal from 'sweetalert2'
 import { useAuth } from '../../contexts/AuthContext'
+import Loader from '../../components/Loader'
 
 const Queue = () => {
 
+    const [loading, setLoading] = useState(false);
     const [cashier1Ticket, setCashier1Ticket] = useState(null);
     const [cashier2Ticket, setCashier2Ticket] = useState(null);
     const [page, setPage] = useState(1);
     const [tab, setTab] = useState(1);
     const [response, setResponse] = useState({});
+    const [incompleteData, setIncompleteData] = useState([]);
     const [refresh, setRefresh] = useState(false);
     const authContext = useAuth();
 
@@ -43,18 +46,41 @@ const Queue = () => {
 
         fetchData();
 
-        return () => {
-            setRefresh(false);
-            controller.abort();
-        }
+        return () => controller.abort();
     }, [refresh]);
 
-    // Get cashier tickets
+    // Get tickets
     useEffect(() => {
-        setResponse({});
+        setLoading(true);
 
         const controller = new AbortController();
-        const fetchData = async () => {
+
+        const fetchIncompleteTickets = async () => {
+            const baseUrl = import.meta.env.VITE_API_URL;
+            const apiKey = import.meta.env.VITE_API_KEY;
+            const token = authContext.token;
+            const url = `${baseUrl}/api/admin/queues?page=${page}&person=cashier`;
+            const requestOptions = {
+                signal: controller.signal,
+                method: 'GET',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-API-KEY': apiKey,
+                    Authorization: `Bearer ${token}`,
+                },
+            };
+
+            try {
+                const response = await fetch(url, requestOptions);
+                const responseJSON = await response.json();
+                setIncompleteData(responseJSON);
+            } catch (error) {
+                console.log(`API Error: ${error.message}`);
+            }
+        };
+
+        const fetchAllTickets = async () => {
             const baseUrl = import.meta.env.VITE_API_URL;
             const apiKey = import.meta.env.VITE_API_KEY;
             const token = authContext.token;
@@ -70,18 +96,23 @@ const Queue = () => {
                 },
             };
 
-            const response = await fetch(url, requestOptions);
-            const responseJSON = await response.json();
-
-            setResponse(responseJSON);
+            try {
+                const response = await fetch(url, requestOptions);
+                const responseJSON = await response.json();
+                setResponse(responseJSON);
+            } catch (error) {
+                console.log(`API Error: ${error.message}`);
+            } finally {
+                setTimeout(() => {
+                    setLoading(false);
+                }, 500);
+            }
         };
 
-        fetchData();
+        fetchIncompleteTickets();
+        fetchAllTickets();
 
-        return () => {
-            setRefresh(false);
-            controller.abort();
-        }
+        return () => controller.abort();
     }, [refresh, page]);
 
     const formatStatus = status => ['Pending', 'In Progress', 'Completed'][status];
@@ -179,6 +210,8 @@ const Queue = () => {
     const onClickCall = (code, cashier) => speakMessage(code, cashier);
 
     const assignCashierQueueTicket = async (cashier) => {
+        setRefresh(true);
+
         try {
             const baseUrl = import.meta.env.VITE_API_URL;
             const apiKey = import.meta.env.VITE_API_KEY;
@@ -201,8 +234,8 @@ const Queue = () => {
             const responseJSON = await response.json();
             const { ticket_code } = responseJSON;
 
-            setRefresh(true);
-            speakMessage(ticket_code, cashier);
+            setRefresh(prev => !prev);
+            setTimeout(() => speakMessage(ticket_code, cashier), 500);
         } catch (error) {
             console.log(`API Error: ${error}`);
         }
@@ -210,7 +243,7 @@ const Queue = () => {
 
     const onClickRefresh = () => {
         setPage(1);
-        setRefresh(true);
+        setRefresh(prev => !prev);
     };
 
     const onClickPrevPagination = () => setPage(prev => --prev);
@@ -226,8 +259,8 @@ const Queue = () => {
             cancelButtonText: 'No',
             reverseButtons: true,
             customClass: {
-                confirmButton: 'bg-gray-300 text-black',
-                cancelButton: 'bg-red-500'
+                cancelButton: 'bg-gray-300 text-black',
+                confirmButton: 'bg-red-500'
             }
         });
 
@@ -247,19 +280,19 @@ const Queue = () => {
 
             const response = await fetch(url, requestOptions);
             const responseJSON = await response.json();
-
-            setRefresh(true);
+            setRefresh(prev => !prev);
         }
     }
 
     const onClickTab = (tab) => {
         setTab(tab);
-
-        setRefresh(true);
+        setRefresh(prev => !prev);
     }
 
     return (
         <>
+            <Loader loading={loading} />
+
             <div className="flex h-screen">
                 <Sidebar className="w-1/5" />
 
@@ -278,7 +311,7 @@ const Queue = () => {
                         </div>
 
                         {
-                            response && response.data && response.data.length > 0 && (
+                            incompleteData && incompleteData.data && incompleteData.meta.total > 0 && (
                                 <button className="text-white rounded-md py-2 bg-blue-500 hover:bg-blue-400 self-center min-w-36" onClick={onClickNext}>Next</button>
                             )
                         }

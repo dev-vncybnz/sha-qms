@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import shaLoonLogo from '../assets/images/sha-loon-logo.png';
+import shaLoonLogo from '../assets/images/sha-loon-logo.png'
 
 const QueueMonitor = () => {
 
@@ -18,39 +18,34 @@ const QueueMonitor = () => {
     // Get Video
     useEffect(() => {
         const controller = new AbortController();
+        const fetchVideo = async () => {
+            const baseUrl = import.meta.env.VITE_API_URL;
+            const apiKey = import.meta.env.VITE_API_KEY;
+            const url = `${baseUrl}/api/videos`;
+            const requestOptions = {
+                signal: controller.signal,
+                method: 'GET',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-API-KEY': apiKey,
+                },
+            };
 
-        try {
-            const fetchVideo = async () => {
-
-                const baseUrl = import.meta.env.VITE_API_URL;
-                const apiKey = import.meta.env.VITE_API_KEY;
-                const url = `${baseUrl}/api/videos`;
-                const requestOptions = {
-                    signal: controller.signal,
-                    method: 'GET',
-                    headers: {
-                        Accept: 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-API-KEY': apiKey,
-                    },
-                };
-
+            try {
                 const response = await fetch(url, requestOptions);
                 const responseJSON = await response.json();
                 const { filename } = responseJSON;
                 const videoUrl = `${baseUrl}/storage/videos/${filename}`;
-
                 setVideoUrl(videoUrl);
-            };
+            } catch (error) {
+                console.log(`API error ${error}`);
+            }
+        };
 
-            fetchVideo();
-        } catch (error) {
-            console.log(`API error ${error}`);
-        }
+        fetchVideo();
 
-        return () => {
-            controller.abort();
-        }
+        return () => controller.abort();
     }, []);
 
     // Set Current Date & Time

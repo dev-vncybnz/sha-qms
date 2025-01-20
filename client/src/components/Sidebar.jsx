@@ -1,15 +1,33 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import shaLoonLogo from '../assets/images/sha-loon-logo.png'
 import Swal from 'sweetalert2'
 import { useAuth } from '../contexts/AuthContext'
 import { useLocation, useNavigate } from 'react-router-dom'
+import Loader from './Loader'
 
 const Sidebar = (props) => {
 
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
     const authContext = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const role = authContext.user.role;
+
+    useEffect(() => {
+        if (error != null) {
+            Swal.fire({
+                title: 'Logout Error!',
+                text: error,
+                icon: 'error',
+                showConfirmButton: false,
+                timer: 2000,
+                timerProgressBar: true,
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            });
+        }
+    }, [error]);
 
     const logoutUser = async () => {
         // Delete tokens in the database
@@ -53,7 +71,19 @@ const Sidebar = (props) => {
         });
 
         if (result.isConfirmed) {
-            logoutUser();
+            setLoading(true);
+
+            try {
+                logoutUser();
+            } catch (error) {
+                console.log(`API Error: ${error.message}`);
+                setError(error.message);
+            } finally {
+                setTimeout(() => {
+                    setLoading(false);
+                    setError(null);
+                }, [500]);
+            }
         }
     }
 
@@ -71,6 +101,8 @@ const Sidebar = (props) => {
 
     return (
         <>
+            <Loader loading={loading} />
+
             {/* Sidebar */}
             <div className={`${props.className} shadow-xl flex flex-col gap-3 p-5`}>
                 <img src={shaLoonLogo} alt="SHA Loon Logo" />

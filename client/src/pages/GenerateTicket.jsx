@@ -1,11 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react'
 import Swal from 'sweetalert2'
-import Ticket from '../components/Ticket';
-import { useReactToPrint } from 'react-to-print';
-import Loader from '../components/Loader';
+import Ticket from '../components/Ticket'
+import { useReactToPrint } from 'react-to-print'
+import Loader from '../components/Loader'
 
 const GenerateTicket = () => {
-
     const [ticket, setTicket] = useState({});
     const componentRef = useRef();
     const [loading, setLoading] = useState(false);
@@ -14,23 +13,11 @@ const GenerateTicket = () => {
         if (ticket.code && ticket.destination) {
             printFn();
         }
-    }, [ticket.code, ticket.destination]);
-
-    const handleAfterPrint = React.useCallback(() => {
-        setTicket({});
-        console.log("`onAfterPrint` called");
-    }, []);
-
-    const handleBeforePrint = React.useCallback(() => {
-        console.log("`onBeforePrint` called");
-        return Promise.resolve();
-    }, []);
+    }, [ticket.code]);
 
     const printFn = useReactToPrint({
         contentRef: componentRef,
         documentTitle: ticket.code,
-        onAfterPrint: handleAfterPrint,
-        onBeforePrint: handleBeforePrint,
     });
 
     const onClickButton = async (person) => {
@@ -51,22 +38,22 @@ const GenerateTicket = () => {
         if (isConfirmed) {
             setLoading(true);
 
-            try {
-                const baseUrl = import.meta.env.VITE_API_URL;
-                const apiKey = import.meta.env.VITE_API_KEY;
-                const url = `${baseUrl}/api/generate-ticket`;
-                const requestOptions = {
-                    method: "POST",
-                    headers: {
-                        Accept: "application/json",
-                        "Content-Type": "application/json",
-                        "X-API-KEY": apiKey,
-                    },
-                    body: JSON.stringify({
-                        person,
-                    })
-                };
+            const baseUrl = import.meta.env.VITE_API_URL;
+            const apiKey = import.meta.env.VITE_API_KEY;
+            const url = `${baseUrl}/api/generate-ticket`;
+            const requestOptions = {
+                method: "POST",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                    "X-API-KEY": apiKey,
+                },
+                body: JSON.stringify({
+                    person,
+                })
+            };
 
+            try {
                 const response = await fetch(url, requestOptions);
                 const responseJSON = await response.json();
                 const { ticket_code } = responseJSON;

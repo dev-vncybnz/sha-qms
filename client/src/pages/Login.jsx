@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react'
 import Swal from 'sweetalert2'
-import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext'
+import { useNavigate } from 'react-router-dom'
+import Loader from '../components/Loader'
 
 const Login = () => {
-    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [data, setData] = useState({});
     const authContext = useAuth();
     const navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (error != null) {
@@ -50,13 +51,15 @@ const Login = () => {
         };
 
         try {
-            setIsLoading(true);
+            setLoading(true);
             setError(null);
 
             const response = await fetch(url, requestOptions);
 
             if (!response.ok) {
+                setLoading(false);
                 setError("Invalid Credentials");
+                
                 throw new Error(`API error: ${response.statusText}`);
             }
 
@@ -82,16 +85,18 @@ const Login = () => {
             }
         } catch (error) {
             setError("Invalid Credentials");
-            console.log(error);
+            console.log(`API Error: ${error}`);
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     }
 
     return (
         <div id="admin-login">
             <div className="container h-screen flex justify-center items-center">
-                <div className="w-2/5 shadow-md p-10 rounded-xl">
+                <Loader loading={loading} />
+
+                <div className="w-4/12 shadow-md p-10 rounded-xl">
                     <h1 className="text-center text-3xl uppercase mb-10">Login</h1>
 
                     <form onSubmit={handleSubmit}>
@@ -104,7 +109,7 @@ const Login = () => {
                                 <label htmlFor="password">Password</label>
                                 <input type="password" id="password" name="password" onChange={handleChange} className="block w-full p-2 rounded-md border border-black" />
                             </div>
-                            <button type="submit" className="w-full py-3 bg-red-600 rounded-md uppercase text-white hover:bg-red-500 disabled:bg-red-300" disabled={isLoading || !data.email || !data.password}>Login</button>
+                            <button type="submit" className="w-full py-3 bg-red-600 rounded-md uppercase text-white hover:bg-red-500 disabled:bg-red-300" disabled={loading || !data.email || !data.password}>Login</button>
                         </div>
                     </form>
                 </div>

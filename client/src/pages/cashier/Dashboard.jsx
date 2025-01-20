@@ -26,18 +26,18 @@ const Dashboard = () => {
         },
       };
 
-      const response = await fetch(url, requestOptions);
-      const responseJSON = await response.json();
-      const { incomplete, completed } = responseJSON;
+      try {
+        const response = await fetch(url, requestOptions);
+        const responseJSON = await response.json();
+        const { incomplete, completed } = responseJSON;
 
-      setTotals({ incomplete, completed });
+        setTotals({ incomplete, completed });
+      } catch (error) {
+        console.log(`API Error: ${error}`);
+      }
     }
 
-    try {
-      fetchData();
-    } catch (error) {
-      console.log(`API Error: ${error.message}`);
-    }
+    fetchData();
   }, []);
 
   return (

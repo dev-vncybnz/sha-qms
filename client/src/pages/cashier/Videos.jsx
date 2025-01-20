@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from 'react'
-import Sidebar from '../components/Sidebar'
+import Sidebar from '../../components/Sidebar'
 import Swal from 'sweetalert2';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
+import Loader from '../../components/Loader';
 
-const ManageVideos = () => {
+const Videos = () => {
 
+  const [loading, setLoading] = useState(false);
   const [videoId, setVideoId] = useState(null);
   const [videoUrl, setVideoUrl] = useState(null);
   const [error, setError] = useState(null);
   const authContext = useAuth();
 
   useEffect(() => {
-    if (error) {
+    if (error != null) {
       Swal.fire({
         title: 'Upload Error!',
         text: error,
@@ -21,8 +23,7 @@ const ManageVideos = () => {
         timerProgressBar: true,
         allowOutsideClick: false,
         allowEscapeKey: false
-      })
-        .then(() => setError(null));
+      });
     }
   }, [error]);
 
@@ -46,20 +47,23 @@ const ManageVideos = () => {
         },
       };
 
-      const response = await fetch(url, requestOptions);
-      const responseJSON = await response.json();
-      const { filename } = responseJSON;
-      const videoUrl = `${baseUrl}/storage/videos/${filename}`;
-
-      console.log(responseJSON, videoUrl);
-      setVideoUrl(videoUrl);
+      try {
+        const response = await fetch(url, requestOptions);
+        const responseJSON = await response.json();
+        const { filename } = responseJSON;
+        const videoUrl = `${baseUrl}/storage/videos/${filename}`;
+        setVideoUrl(videoUrl);
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          setError(error.message);
+        }
+        console.log(`API Error: ${error}`);
+      }
     };
 
     fetchVideo();
 
-    return () => {
-      controller.abort();
-    }
+    return () => controller.abort();
   }, [videoId]);
 
   const onClickReplace = () => {
@@ -68,43 +72,54 @@ const ManageVideos = () => {
   }
 
   const onChangeTrigger = async (e) => {
-    const file = e.target.files[0];
+    try {
+      setLoading(true);
 
-    if (file && file.type !== "video/mp4") {
-      setError("Please select only mp4 video");
-      e.target.value = "";
+      const file = e.target.files[0];
 
-      return;
+      if (file && file.type !== "video/mp4") {
+        setLoading(false);
+        setError("Please select only mp4 video");
+        e.target.value = "";
+
+        return;
+      }
+
+      const token = authContext.token;
+      const baseUrl = import.meta.env.VITE_API_URL;
+      const apiKey = import.meta.env.VITE_API_KEY;
+      const url = `${baseUrl}/api/videos`;
+
+      const formData = new FormData();
+      formData.append('video', file);
+
+      const requestOptions = {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'X-API-KEY': apiKey,
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      };
+
+      const response = await fetch(url, requestOptions);
+      const responseJSON = await response.json();
+      const { id } = responseJSON;
+
+      setVideoId(id);
+    } catch (error) {
+      setError(error.message);
+      console.log(`API Error: ${error}`);
+    } finally {
+      setLoading(false);
     }
-
-    const token = authContext.token;
-    const baseUrl = import.meta.env.VITE_API_URL;
-    const apiKey = import.meta.env.VITE_API_KEY;
-    const url = `${baseUrl}/api/videos`;
-
-    const formData = new FormData();
-    formData.append('video', file);
-
-    const requestOptions = {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'X-API-KEY': apiKey,
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    };
-
-    const response = await fetch(url, requestOptions);
-    const responseJSON = await response.json();
-    const { id } = responseJSON;
-
-    setVideoId(id);
   }
 
   return (
     <>
       <div className="flex h-screen">
+        <Loader loading={loading} />
         <Sidebar className="w-1/5" />
 
         {/* Content */}
@@ -120,4 +135,4 @@ const ManageVideos = () => {
   )
 }
 
-export default ManageVideos
+export default Videos
