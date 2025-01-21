@@ -44,6 +44,10 @@ const Ticket = (props, ref) => {
                     code && code.includes('REG') && (
                         <div className="mt-3 flex flex-col gap-2">
                             <div className="flex gap-3 items-end">
+                                <p><strong>Name:</strong></p>
+                                <div className="grow bg-black h-px"></div>
+                            </div>
+                            <div className="flex gap-3 items-end">
                                 <p><strong>Purpose:</strong></p>
                                 <div className="grow bg-black h-px"></div>
                             </div>
