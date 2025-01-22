@@ -100,18 +100,21 @@ class QueueController extends Controller
         // Cashier 1
         $cashier1LatestInProgressData = Queue::where('assigned_person', RoleEnum::CASHIER_1)
             ->where('status', QueueStatusEnum::IN_PROGRESS)
+            ->whereDate('created_at', now())
             ->orderBy('created_at', 'asc')
             ->first();
 
         // Cashier 2
         $cashier2LatestInProgressData = Queue::where('assigned_person', RoleEnum::CASHIER_2)
             ->where('status', QueueStatusEnum::IN_PROGRESS)
+            ->whereDate('created_at', now())
             ->orderBy('created_at', 'asc')
             ->first();
 
         // Registrar
         $registrarLatestInProgressData = Queue::where('assigned_person', RoleEnum::REGISTRAR)
             ->where('status', QueueStatusEnum::IN_PROGRESS)
+            ->whereDate('created_at', now())
             ->orderBy('created_at', 'asc')
             ->first();
 
