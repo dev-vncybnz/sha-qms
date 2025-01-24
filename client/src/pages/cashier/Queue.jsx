@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Sidebar from '../../components/Sidebar'
@@ -17,8 +17,33 @@ const Queue = () => {
     const [incompleteData, setIncompleteData] = useState({});
     const [refresh, setRefresh] = useState(false);
     const authContext = useAuth();
+    const speech = new SpeechSynthesisUtterance();
+    const femaleVoiceRef = useRef(null);
 
-    // Get tickets
+    useEffect(() => {
+        const setVoice = () => {
+            const voices = window.speechSynthesis.getVoices();
+            femaleVoiceRef.current =
+                voices.find(voice =>
+                    voice.lang === "en-US" &&
+                    (/female|woman/i.test(voice.name) || /Zira|Jenny/i.test(voice.name))
+                ) ||
+                voices.find(voice =>
+                    voice.lang === "en-US" && voice.name.includes("Google")
+                );
+        };
+
+        if (window.speechSynthesis.getVoices().length) {
+            setVoice();
+        }
+
+        window.speechSynthesis.addEventListener("voiceschanged", setVoice);
+
+        return () => {
+            window.speechSynthesis.removeEventListener("voiceschanged", setVoice);
+        };
+    }, []);
+
     useEffect(() => {
         setLoading(true);
 
@@ -154,35 +179,17 @@ const Queue = () => {
 
     const speakMessage = (code, cashier) => {
         const formattedCode = code.split('').join(' ');
-        const destination = cashier == 'cashier_1' ? 'Cashier 1' : 'Cashier 2';
+        const destination = cashier === 'cashier_1' ? 'Cashier 1' : 'Cashier 2';
         const message = `${formattedCode}, please proceed to ${destination}!`;
-        const utterance = new SpeechSynthesisUtterance(formatMessage(message));
-        utterance.lang = 'en-US';
-        utterance.rate = 1.1;
+        speech.text = formatMessage(message);
+        speech.lang = 'en-US';
 
-        const setFemaleVoice = () => {
-            const voices = speechSynthesis.getVoices();
-
-            const femaleVoice = voices.find(voice =>
-                voice.lang === 'en-US' &&
-                (/female|woman/i.test(voice.name) || /Zira|Jenny/i.test(voice.name))
-            ) || voices.find(voice =>
-                voice.lang === 'en-US' && voice.name.includes('Google')
-            );
-
-            if (femaleVoice) {
-                utterance.voice = femaleVoice;
-            }
-
-            speechSynthesis.speak(utterance);
-        };
-
-        if (speechSynthesis.getVoices().length) {
-            setFemaleVoice();
-        } else {
-            speechSynthesis.onvoiceschanged = setFemaleVoice;
+        if (femaleVoiceRef.current) {
+            speech.voice = femaleVoiceRef.current;
         }
-    }
+
+        window.speechSynthesis.speak(speech);
+    };
 
     const onClickNext = async () => {
         const showConfirmButton = response.data.length == 1 && response.data[0].assigned_person && response.data[0].assigned_person != 'cashier_1' ? false : true
