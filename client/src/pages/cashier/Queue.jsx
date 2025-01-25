@@ -181,6 +181,7 @@ const Queue = () => {
         const formattedCode = code.split('').join(' ');
         const destination = cashier === 'cashier_1' ? 'Cashier 1' : 'Cashier 2';
         const message = `${formattedCode}, please proceed to ${destination}!`;
+        const speech = new SpeechSynthesisUtterance(message);
         speech.text = formatMessage(message);
         speech.lang = 'en-US';
 
@@ -188,6 +189,7 @@ const Queue = () => {
             speech.voice = femaleVoiceRef.current;
         }
 
+        window.speechSynthesis.cancel();
         window.speechSynthesis.speak(speech);
     };
 
