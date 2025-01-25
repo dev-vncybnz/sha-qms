@@ -183,6 +183,7 @@ const Queue = () => {
             speech.voice = femaleVoiceRef.current;
         }
 
+        window.speechSynthesis.cancel();
         window.speechSynthesis.speak(speech);
     };
 
